@@ -1,0 +1,12 @@
+    <section class="card pf-block {{ extra() }}">
+      @if (title() || sub()) {
+        <div class="pf-blockhead">
+          <div>
+            @if (title()) { <h3>{{ title() }}</h3> }
+            @if (sub()) { <span class="muted">{{ sub() }}</span> }
+          </div>
+          <ng-content select="[right]"/>
+        </div>
+      }
+      <ng-content/>
+    </section>

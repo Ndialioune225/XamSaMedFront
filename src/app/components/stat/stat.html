@@ -1,0 +1,10 @@
+    <div class="card pf-stat">
+      <div class="pf-statrow">
+        <span class="pf-staticon {{ tone() }}"><nv-icon [name]="icon()" [size]="20"/></span>
+        @if (delta()) {
+          <span class="pf-statdelta {{ deltaUp() ? 'up' : 'down' }}">{{ deltaUp() ? '▲' : '▼' }} {{ delta() }}</span>
+        }
+      </div>
+      <strong class="pf-statval">{{ value() }}</strong>
+      <span class="pf-statlabel">{{ label() }}</span>
+    </div>

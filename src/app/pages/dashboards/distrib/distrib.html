@@ -1,0 +1,123 @@
+    @switch (section()) {
+      @case ('home') {
+        <div>
+          <pf-page-head title="Tableau de bord distributeur" sub="PNA — Pharmacie Nationale d'Approvisionnement"/>
+          <div class="pf-statgrid">
+            <pf-stat icon="layers" tone="blue" label="Demandes régionales" [value]="demandes().length"/>
+            <pf-stat icon="alert" tone="red" label="Zones critiques" [value]="critZones()"/>
+            <pf-stat icon="truck" tone="green" label="Livraisons planifiées" value="18" delta="6 cette semaine" [deltaUp]="true"/>
+            <pf-stat icon="pill" tone="amber" label="Médicaments en tension" [value]="tensionHigh()"/>
+          </div>
+          <div class="pf-cols">
+            <pf-card title="Demandes régionales prioritaires" sub="Par niveau de tension">
+              <span right class="chip chip-red">{{ urgentes() }} urgentes</span>
+              <table class="pf-table">
+                <thead><tr><th>Zone</th><th>Médicament</th><th>Besoin estimé</th><th>Officines</th><th>Tension</th></tr></thead>
+                <tbody>
+                  @for (d of demandes(); track d.id) {
+                    <tr>
+                      <td><strong style="font-family:'Montserrat';color:var(--blue)">{{ d.zone }}</strong></td>
+                      <td>{{ d.med }}</td>
+                      <td class="muted">{{ d.vol }}</td>
+                      <td class="muted">{{ d.officines }}</td>
+                      <td><pf-tag [s]="tcol(d.tension)">{{ d.tension }}</pf-tag></td>
+                    </tr>
+                  }
+                  @if (demandes().length === 0) { <tr><td colspan="5" class="muted" style="text-align:center;padding:16px 0">Aucune demande régionale active.</td></tr> }
+                </tbody>
+              </table>
+            </pf-card>
+            <pf-card title="Alertes automatiques" sub="Signaux de tension détectés">
+              @for (a of autoAlerts(); track a.medicine_id) {
+                <div class="pf-li">
+                  <span class="pf-liic {{ a.severity === 'high' ? 'red' : 'amber' }}"><nv-icon name="bell" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ a.name }}</strong><span>{{ a.pharmacy_reports.length }} officine(s) en tension</span></div>
+                  <pf-tag [s]="sevTag(a.severity)">{{ sevLabel(a.severity) }}</pf-tag>
+                </div>
+              }
+              @if (autoAlerts().length === 0) { <div class="muted" style="padding:14px 0">Aucune alerte automatique.</div> }
+            </pf-card>
+          </div>
+        </div>
+      }
+
+      @case ('reg') {
+        <div>
+          <pf-page-head title="Demandes régionales" sub="Gérez et planifiez les réapprovisionnements par zone.">
+            <button actions class="btn btn-green btn-sm"><nv-icon name="truck" [size]="16"/> Planifier une livraison</button>
+          </pf-page-head>
+          @for (d of demandes(); track d.id) {
+            <pf-card>
+              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                <span class="pf-liic {{ d.tension === 'haute' ? 'red' : d.tension === 'moyenne' ? 'amber' : 'green' }}" style="width:48px;height:48px"><nv-icon name="pin" [size]="22"/></span>
+                <div style="flex:1;min-width:200px">
+                  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <span class="pf-medname" style="font-size:16px">{{ d.zone }}</span>
+                    <pf-tag [s]="tcol(d.tension)">Tension {{ d.tension }}</pf-tag>
+                  </div>
+                  <p class="muted" style="font-size:13.5px;margin-top:4px">{{ d.med }} · besoin estimé <strong style="color:var(--blue)">{{ d.vol }}</strong> · {{ d.officines }} officines concernées</p>
+                </div>
+                <div class="pf-li-act">
+                  <button class="btn btn-outline btn-sm" (click)="forecast(d.zone)">Prévoir</button>
+                  <button class="btn btn-green btn-sm" (click)="plan(d.id, d.zone)">Planifier</button>
+                </div>
+              </div>
+            </pf-card>
+          }
+          @if (demandes().length === 0) {
+            <pf-card>
+              <div style="text-align:center;padding:34px;color:var(--gray-text)">
+                <nv-icon name="checkC" [size]="34" color="var(--green)"/>
+                <p style="margin-top:8px">Toutes les demandes régionales sont planifiées.</p>
+              </div>
+            </pf-card>
+          }
+        </div>
+      }
+
+      @case ('zones') {
+        <div>
+          <pf-page-head title="Zones critiques" sub="Vue géographique des tensions d'approvisionnement."/>
+          <div class="pf-cols">
+            <pf-card title="Carte des tensions">
+              @defer (on viewport) {
+                <pf-zone-map [zones]="zones()" [selected]="sel()" (sel)="sel.set($event)"/>
+              } @placeholder {
+                <div class="muted" style="min-height:300px;display:flex;align-items:center;justify-content:center">Chargement de la carte…</div>
+              }
+            </pf-card>
+            <pf-card [title]="sel() || 'Toutes les zones'" [sub]="sel() ? 'Détail de la zone' : 'Cliquez une zone sur la carte'">
+              @for (z of zonesList(); track z.nom) {
+                <div class="pf-li">
+                  <span class="pf-liic {{ z.niveau === 'crit' ? 'red' : z.niveau === 'haute' ? 'amber' : z.niveau === 'moyenne' ? 'green' : '' }}"><nv-icon name="pin" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ z.nom }}</strong><span>{{ z.ruptures }} rupture(s) signalée(s)</span></div>
+                  <pf-tag [s]="ztag(z.niveau)">{{ z.niveau }}</pf-tag>
+                </div>
+              }
+              @if (zonesList().length === 0) { <div class="muted" style="padding:14px 0">Aucune zone en tension.</div> }
+            </pf-card>
+          </div>
+        </div>
+      }
+
+      @case ('prev') {
+        <div>
+          <pf-page-head title="Prévisions logistiques" sub="Anticipez les besoins par médicament sur les 14 prochains jours."/>
+          <pf-card title="Médicaments à risque de rupture" sub="Probabilité de tension estimée">
+            @for (t of tension(); track t.nom) {
+              <div style="padding:14px 0;border-bottom:1px solid var(--gray-line)">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center">
+                  <span class="pf-medname">{{ t.nom }}</span>
+                  <span style="display:flex;gap:10px;align-items:center">
+                    <span class="muted" style="font-size:13px">délai réappro. {{ t.delai }}</span>
+                    <strong style="font-family:'Montserrat'" [style.color]="t.pct > 50 ? '#cf4338' : 'var(--blue)'">{{ t.pct }}%</strong>
+                  </span>
+                </div>
+                <pf-bar [pct]="t.pct" [tone]="tone(t.pct)"/>
+              </div>
+            }
+            @if (tension().length === 0) { <div class="muted" style="padding:14px 0">Aucune tension détectée pour le moment.</div> }
+          </pf-card>
+        </div>
+      }
+    }

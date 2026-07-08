@@ -1,0 +1,31 @@
+    <div>
+      <pf-page-head title="Pharmacies à proximité" sub="Localisez les officines partenaires autour de vous."/>
+      <div class="pf-cols">
+        <pf-card title="Carte" sub="Cliquez sur une officine">
+          <div class="pf-map">
+            @for (p of pharmacies(); track p.id) {
+              <button class="pf-mappin" [style.left.%]="p.lng" [style.top.%]="p.lat" (click)="sel.set(p.id)">
+                <span class="pf-mapdot" [style.background]="sel() === p.id ? 'var(--blue)' : 'var(--green)'"></span>
+              </button>
+            }
+            <span class="pf-mappin" style="left:48%;top:52%">
+              <span class="pf-mapdot" style="background:var(--blue);width:14px;height:14px;box-shadow:0 0 0 6px rgba(0,51,102,.15)"></span>
+            </span>
+            <div class="pf-maplegend">
+              <div><span class="dot" style="background:var(--green)"></span> Officine partenaire</div>
+              <div><span class="dot" style="background:var(--blue)"></span> Votre position</div>
+            </div>
+          </div>
+        </pf-card>
+        <pf-card title="Officines" [sub]="pharmacies().length + ' à proximité'">
+          @for (p of pharmacies(); track p.id) {
+            <div class="pf-li" style="cursor:pointer;border-radius:10px;padding:12px 10px"
+                 [style.background]="sel() === p.id ? 'var(--gray-bg)' : 'transparent'" (click)="sel.set(p.id)">
+              <span class="pf-liic"><nv-icon name="pin" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ p.nom }}</strong><span>{{ p.ville }} · {{ p.horaires }}</span></div>
+              <span class="chip chip-gray">{{ p.dist }}</span>
+            </div>
+          }
+        </pf-card>
+      </div>
+    </div>

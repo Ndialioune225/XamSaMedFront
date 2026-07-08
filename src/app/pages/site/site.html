@@ -1,0 +1,342 @@
+<div class="s-site">
+  <!-- Header -->
+  <header class="s-header" [class.sc]="scrolled()">
+    <div class="container s-headinner">
+      <nv-logo (clicked)="go('#top')"/>
+      <nav class="s-nav">
+        @for (l of navLinks; track l[1]) { <a [href]="l[1]">{{ l[0] }}</a> }
+      </nav>
+      <div class="s-headcta">
+        <button class="btn btn-ghost btn-sm" (click)="launch()">Se connecter</button>
+        <button class="btn btn-green btn-sm" (click)="launch()">Accéder à la plateforme <nv-icon name="arrow" [size]="16"/></button>
+      </div>
+      <button class="s-burger" (click)="menuOpen.set(!menuOpen())" aria-label="Menu">
+        @if (menuOpen()) { <nv-icon name="x"/> } @else { <nv-icon name="menu"/> }
+      </button>
+    </div>
+    @if (menuOpen()) {
+      <div class="s-mobnav">
+        @for (l of navLinks; track l[1]) { <a [href]="l[1]" (click)="menuOpen.set(false)">{{ l[0] }}</a> }
+        <button class="btn btn-green" (click)="launch()">Accéder à la plateforme</button>
+      </div>
+    }
+  </header>
+
+  <!-- Hero -->
+  <section class="s-hero" id="top">
+    <div class="container s-herogrid">
+      <div class="s-herocopy">
+        <span class="chip chip-green"><span class="dot" style="background:var(--green)"></span> Plateforme web &amp; mobile · temps réel</span>
+        <h1>Trouvez le bon médicament, <span class="hl">au bon endroit</span>, au bon moment.</h1>
+        <p class="s-herosub">NOVAmedacces connecte patients, pharmaciens, distributeurs et hôpitaux pour anticiper les ruptures de stock et orienter chaque demande vers l'officine qui dispose du traitement — partout, y compris en zones rurales.</p>
+        <div class="s-herobtns">
+          <button class="btn btn-primary btn-lg" (click)="launch()">Rechercher un médicament <nv-icon name="search" [size]="18"/></button>
+          <button class="btn btn-outline btn-lg" (click)="go('#how')">Comment ça marche</button>
+        </div>
+        <div class="s-herostats">
+          @for (s of heroStats; track s[1]) { <div><strong>{{ s[0] }}</strong><span>{{ s[1] }}</span></div> }
+        </div>
+      </div>
+      <div class="s-heroart">
+        <div class="s-herocard card">
+          <div class="s-hcrow">
+            <span class="chip chip-blue"><nv-icon name="pin" [size]="14"/> Pharmacie la plus proche</span>
+            <span class="chip chip-green">Disponible</span>
+          </div>
+          <div class="s-hcsearch"><nv-icon name="search" [size]="18" color="var(--gray-text)"/><span>Morphine 10mg/ml</span></div>
+          @for (l of heroLines; track l[0]) {
+            <div class="s-hcline">
+              <span class="s-hcdot" [attr.data-s]="l[2]"></span>
+              <div><strong>{{ l[0] }}</strong><span>{{ l[1] }}</span></div>
+              <nv-icon name="chevron" [size]="16" color="var(--gray)"/>
+            </div>
+          }
+          <button class="btn btn-green s-hcbtn">Réserver maintenant</button>
+        </div>
+        <div class="s-herobadge card">
+          <span style="background:var(--green-soft);color:var(--green);width:34px;height:34px;border-radius:9px;display:grid;place-items:center"><nv-icon name="qr" [size]="19"/></span>
+          <div><strong>Accès QR</strong><span>Scannez pour accéder en 1 s</span></div>
+        </div>
+        <div class="s-herobadge2 card">
+          <span style="background:#fdeceb;color:#b3261e;width:34px;height:34px;border-radius:9px;display:grid;place-items:center"><nv-icon name="bell" [size]="18"/></span>
+          <div><strong>Alerte rupture</strong><span>Orientée vers une autre officine</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="s-logos container">
+      <span>Conçu pour s'intégrer avec</span>
+      <div class="s-logorow">
+        @for (l of heroLogos; track l) { <span class="s-logoitem">{{ l }}</span> }
+      </div>
+    </div>
+  </section>
+
+  <!-- Problème -->
+  <section class="section s-problem">
+    <div class="container">
+      <div class="s-prob-grid">
+        <div class="fade-up">
+          <span class="eyebrow">Le problème</span>
+          <h2 style="font-size:clamp(26px,3.2vw,38px);font-weight:800;margin:14px 0 18px">Les ruptures de médicaments coûtent du temps — et parfois des vies.</h2>
+          <p class="muted" style="font-size:17px">Faute d'information partagée, un patient peut parcourir plusieurs officines avant de trouver son traitement, pendant qu'une pharmacie voisine l'a en stock. NOVAmedacces rend cette information visible, sécurisée et actionnable.</p>
+        </div>
+        <div class="s-prob-cards">
+          @for (c of problemCards; track c[1]; let i = $index) {
+            <div class="card s-probcard fade-up" [style.transition-delay.ms]="i * 80">
+              <span class="s-probicon"><nv-icon [name]="c[0]" [size]="22"/></span>
+              <div><strong>{{ c[1] }}</strong><p class="muted">{{ c[2] }}</p></div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fonctionnalités -->
+  <section class="section s-features" id="features">
+    <div class="container">
+      <div class="section-head fade-up">
+        <span class="eyebrow">Fonctionnalités</span>
+        <h2>Une plateforme, pensée pour chaque acteur</h2>
+        <p>Des fonctions dédiées à chaque profil, articulées autour d'une donnée partagée et sécurisée.</p>
+      </div>
+      <div class="s-feattabs fade-up">
+        @for (ff of features; track ff.role; let i = $index) {
+          <button class="s-feattab" [class.on]="i === tab()" (click)="tab.set(i)">
+            <span class="s-feattabic"><nv-icon [name]="ff.icon" [size]="18"/></span>{{ ff.role }}
+          </button>
+        }
+      </div>
+      <div class="s-featgrid">
+        @for (it of currentFeature().items; track it[1]; let i = $index) {
+          <div class="card s-featcard fade-up" [style.transition-delay.ms]="i * 60">
+            <span class="s-featicon" [class.g]="currentFeature().color === 'green'" [class.b]="currentFeature().color !== 'green'"><nv-icon [name]="it[0]" [size]="22"/></span>
+            <strong>{{ it[1] }}</strong>
+            <p class="muted">{{ it[2] }}</p>
+          </div>
+        }
+      </div>
+      <div class="s-featfoot fade-up">
+        <button class="btn btn-primary" (click)="launch()">Voir le tableau de bord {{ firstWord(currentFeature().role) }} <nv-icon name="arrow" [size]="16"/></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comment ça marche -->
+  <section class="section s-how" id="how">
+    <div class="container">
+      <div class="section-head fade-up">
+        <span class="eyebrow" style="color:#bfe3cd">Parcours</span>
+        <h2 style="color:#fff">Comment ça marche</h2>
+        <p style="color:rgba(255,255,255,.75)">Quatre étapes, du besoin du patient à la réponse logistique.</p>
+      </div>
+      <div class="s-howgrid">
+        @for (s of howSteps; track s[1]; let i = $index) {
+          <div class="s-howstep fade-up" [style.transition-delay.ms]="i * 90">
+            <span class="s-hownum">{{ stepNum(i) }}</span>
+            <span class="s-howicon"><nv-icon [name]="s[0]" [size]="24"/></span>
+            <strong>{{ s[1] }}</strong>
+            <p>{{ s[2] }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Technologies -->
+  <section class="section s-tech" id="tech">
+    <div class="container">
+      <div class="section-head fade-up">
+        <span class="eyebrow">Technologie envisagée</span>
+        <h2>Une architecture moderne et connectée</h2>
+        <p>Pensée pour la fiabilité, la rapidité et l'interopérabilité avec l'écosystème de santé.</p>
+      </div>
+      <div class="s-techgrid">
+        @for (it of techItems; track it[1]; let i = $index) {
+          <div class="card s-techcard fade-up" [style.transition-delay.ms]="i * 70">
+            <span class="s-techicon"><nv-icon [name]="it[0]" [size]="24"/></span>
+            <strong>{{ it[1] }}</strong>
+            <p class="muted">{{ it[2] }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Sécurité -->
+  <section class="section s-sec">
+    <div class="container s-secgrid">
+      <div class="s-seccopy fade-up">
+        <span class="eyebrow">Sécurité &amp; exigences</span>
+        <h2 style="font-size:clamp(26px,3.2vw,38px);font-weight:800;margin:14px 0 16px">La confiance, au cœur du dispositif</h2>
+        <p class="muted" style="font-size:17px;margin-bottom:26px">La santé exige le plus haut niveau de rigueur. NOVAmedacces protège les données, respecte la confidentialité des acteurs et reste simple à utiliser pour tous.</p>
+        <div class="ph ph-blue" style="height:200px;font-size:12px">[ photo — équipe technique / data center · à fournir ]</div>
+      </div>
+      <div class="s-seclist">
+        @for (p of secPts; track p[1]; let i = $index) {
+          <div class="s-secitem fade-up" [style.transition-delay.ms]="i * 50">
+            <span class="s-secicon"><nv-icon [name]="p[0]" [size]="20"/></span>
+            <div><strong>{{ p[1] }}</strong><p class="muted">{{ p[2] }}</p></div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Témoignages -->
+  <section class="section s-test">
+    <div class="container">
+      <div class="section-head fade-up">
+        <span class="eyebrow">Témoignages</span>
+        <h2>Ils gagnent du temps, chaque jour</h2>
+      </div>
+      <div class="s-testgrid">
+        @for (t of testimonials; track t[1]; let i = $index) {
+          <div class="card s-testcard fade-up" [style.transition-delay.ms]="i * 80">
+            <div class="s-teststars">
+              @for (s of [0,1,2,3,4]; track s) { <nv-icon name="star" [size]="16" fill="var(--green)" color="var(--green)"/> }
+            </div>
+            <p class="s-testq">{{ t[0] }}</p>
+            <div class="s-testwho">
+              <span class="s-testav"><nv-icon [name]="t[3]" [size]="18"/></span>
+              <div><strong>{{ t[1] }}</strong><span>{{ t[2] }}</span></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- À propos -->
+  <section class="section s-about" id="about">
+    <div class="container s-aboutgrid">
+      <div class="s-aboutart fade-up">
+        <div class="ph ph-green" style="height:380px;font-size:12px">[ photo — équipe jeune NOVAmedacces · à fournir ]</div>
+        <div class="s-aboutbadge card"><strong>2024</strong><span>Startup DevTech</span></div>
+      </div>
+      <div class="s-aboutcopy fade-up">
+        <span class="eyebrow">À propos</span>
+        <h2 style="font-size:clamp(26px,3.2vw,38px);font-weight:800;margin:14px 0 18px">Une startup au service de l'accès aux soins</h2>
+        <p class="muted" style="font-size:17px;margin-bottom:18px">NOVAmedacces est née d'un constat de terrain : l'information sur la disponibilité des médicaments est fragmentée. Notre mission est de la rendre fluide, fiable et accessible à tous les acteurs de la chaîne du soin.</p>
+        <div class="s-aboutvals">
+          @for (v of aboutVals; track v[0]) {
+            <div class="s-aboutval">
+              <nv-icon name="checkC" [size]="22" color="var(--green)"/>
+              <div><strong>{{ v[0] }}</strong><p class="muted">{{ v[1] }}</p></div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section s-faq" id="faq">
+    <div class="container">
+      <div class="section-head fade-up">
+        <span class="eyebrow">FAQ</span>
+        <h2>Questions fréquentes</h2>
+      </div>
+      <div class="s-faqlist fade-up">
+        @for (q of faqs; track q[0]; let i = $index) {
+          <div class="s-faqitem" [class.on]="faqOpen() === i">
+            <button class="s-faqq" (click)="faqOpen.set(faqOpen() === i ? -1 : i)">
+              <span>{{ q[0] }}</span><nv-icon name="chevD" [size]="20" [rotate]="faqOpen() === i ? 180 : 0" color="var(--green)"/>
+            </button>
+            <div class="s-faqa"><p>{{ q[1] }}</p></div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="section s-contact" id="contact">
+    <div class="container s-contactgrid">
+      <div class="s-contactinfo fade-up">
+        <span class="eyebrow">Contact</span>
+        <h2 style="font-size:clamp(26px,3.2vw,38px);font-weight:800;margin:14px 0 16px">Parlons de votre besoin</h2>
+        <p class="muted" style="font-size:17px;margin-bottom:28px">Demande de démo, intégration ou partenariat : notre équipe vous répond rapidement.</p>
+        <div class="s-contactlist">
+          @for (c of contactList; track c[1]) {
+            <div class="s-contactline">
+              <span class="s-contacticon"><nv-icon [name]="c[0]" [size]="19"/></span>
+              <div><span>{{ c[1] }}</span><strong>{{ c[2] }}</strong></div>
+            </div>
+          }
+        </div>
+        <div class="ph" style="height:170px;margin-top:24px;font-size:12px">[ carte Google Maps — emplacement à intégrer ]</div>
+      </div>
+      <form class="card s-form fade-up" (submit)="submitContact($event)">
+        @if (sent()) {
+          <div class="s-formok">
+            <span class="s-formokic"><nv-icon name="checkC" [size]="34"/></span>
+            <h3>Message envoyé !</h3>
+            <p class="muted">Merci {{ form.nom }}. Nous revenons vers vous très vite.</p>
+            <button type="button" class="btn btn-outline" (click)="resetContact()">Nouveau message</button>
+          </div>
+        } @else {
+          <h3 style="margin-bottom:6px">Demande de contact</h3>
+          <p class="muted" style="font-size:14px;margin-bottom:18px">Tous les champs marqués * sont requis.</p>
+          <div class="s-field"><label>Nom complet *</label><input required [value]="form.nom" (input)="form.nom = val($event)" placeholder="Votre nom"/></div>
+          <div class="s-field2">
+            <div class="s-field"><label>Email *</label><input required type="email" [value]="form.email" (input)="form.email = val($event)" placeholder="vous@email.com"/></div>
+            <div class="s-field"><label>Téléphone</label><input [value]="form.tel" (input)="form.tel = val($event)" placeholder="+221…"/></div>
+          </div>
+          <div class="s-field"><label>Vous êtes *</label>
+            <select [value]="form.profil" (change)="form.profil = val($event)">
+              @for (o of profilOptions; track o) { <option>{{ o }}</option> }
+            </select>
+          </div>
+          <div class="s-field"><label>Message *</label><textarea required rows="4" [value]="form.message" (input)="form.message = val($event)" placeholder="Décrivez votre besoin…"></textarea></div>
+          <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Envoyer le message <nv-icon name="send" [size]="17"/></button>
+        }
+      </form>
+    </div>
+  </section>
+
+  <!-- Newsletter + Footer -->
+  <footer class="s-footer">
+    <div class="container">
+      <div class="s-newsletter card">
+        <div>
+          <h3 style="color:#fff;font-size:24px">Restez informé des nouveautés</h3>
+          <p style="color:rgba(255,255,255,.7)">Conseils, actualités santé et améliorations de la plateforme — une fois par mois.</p>
+        </div>
+        <form class="s-newsform" (submit)="subscribe($event)">
+          @if (newsOk()) {
+            <span class="s-newsok"><nv-icon name="checkC" [size]="18"/> Inscription confirmée !</span>
+          } @else {
+            <input type="email" required placeholder="Votre adresse email" [value]="newsMail" (input)="newsMail = val($event)"/>
+            <button class="btn btn-green" type="submit">S'inscrire</button>
+          }
+        </form>
+      </div>
+      <div class="s-footgrid">
+        <div class="s-footbrand">
+          <nv-logo [light]="true" (clicked)="go('#top')"/>
+          <p>L'accès aux médicaments, partout, en temps réel. Une initiative DevTech.</p>
+          <button class="btn btn-green btn-sm" (click)="launch()">Accéder à la plateforme <nv-icon name="arrow" [size]="15"/></button>
+        </div>
+        <div class="s-footcol">
+          <h5>Plateforme</h5>
+          <a href="#features">Fonctionnalités</a><a href="#how">Comment ça marche</a><a href="#tech">Technologie</a><a href="#" (click)="launchLink($event)">Se connecter</a>
+        </div>
+        <div class="s-footcol">
+          <h5>Profils</h5>
+          <a href="#" (click)="launchLink($event)">Patients</a><a href="#" (click)="launchLink($event)">Pharmaciens</a><a href="#" (click)="launchLink($event)">Distributeurs</a><a href="#" (click)="launchLink($event)">Hôpitaux</a>
+        </div>
+        <div class="s-footcol">
+          <h5>Société</h5>
+          <a href="#about">À propos</a><a href="#faq">FAQ</a><a href="#contact">Contact</a><a href="#">Mentions légales</a>
+        </div>
+      </div>
+      <div class="s-footbottom">
+        <span>© 2026 NOVAmedacces · DevTech. Tous droits réservés.</span>
+        <div class="s-footsocial">
+          <span>Données de santé chiffrées</span><nv-icon name="lock" [size]="15" color="var(--green)"/>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>

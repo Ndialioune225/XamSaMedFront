@@ -1,0 +1,7 @@
+    <div class="pf-pagehead">
+      <div>
+        <h1>{{ title() }}</h1>
+        @if (sub()) { <p class="muted">{{ sub() }}</p> }
+      </div>
+      <div class="pf-pagehead-act"><ng-content select="[actions]"/></div>
+    </div>

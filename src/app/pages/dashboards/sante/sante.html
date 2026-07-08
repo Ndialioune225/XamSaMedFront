@@ -1,0 +1,120 @@
+    @switch (section()) {
+      @case ('home') {
+        <div>
+          <pf-page-head title="Vue nationale" sub="Pilotage de l'accès aux médicaments — responsable santé publique">
+            <button actions class="btn btn-outline btn-sm"><nv-icon name="doc" [size]="16"/> Exporter le rapport</button>
+          </pf-page-head>
+          <div class="pf-statgrid">
+            <pf-stat icon="alert" tone="red" label="Zones critiques" [value]="critZones()"/>
+            <pf-stat icon="pill" tone="amber" label="Médicaments en tension" [value]="overview().medicines_in_tension"/>
+            <pf-stat icon="bell" tone="blue" label="Ruptures signalées" [value]="overview().ruptures"/>
+            <pf-stat icon="users" tone="green" label="Zones suivies" [value]="overview().zones_tracked"/>
+          </div>
+          <div class="pf-cols">
+            <pf-card title="Carte nationale des tensions" sub="Niveau d'approvisionnement par région">
+              @defer (on viewport) {
+                <pf-zone-map [zones]="zones()" [selected]="sel()" (sel)="sel.set($event)"/>
+              } @placeholder {
+                <div class="muted" style="min-height:300px;display:flex;align-items:center;justify-content:center">Chargement de la carte…</div>
+              }
+            </pf-card>
+            <pf-card title="Top médicaments en tension" sub="Niveau national">
+              @for (t of topTension(); track t.nom) {
+                <div style="padding:11px 0;border-bottom:1px solid var(--gray-line)">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+                    <span class="pf-medname" style="font-size:13.5px">{{ t.nom }}</span>
+                    <strong style="font-family:'Montserrat';font-size:13px" [style.color]="t.pct > 50 ? '#cf4338' : 'var(--blue)'">{{ t.pct }}%</strong>
+                  </div>
+                  <pf-bar [pct]="t.pct" [tone]="tone(t.pct)"/>
+                </div>
+              }
+              @if (topTension().length === 0) { <div class="muted" style="padding:14px 0">Aucune tension nationale détectée.</div> }
+            </pf-card>
+          </div>
+        </div>
+      }
+
+      @case ('zones') {
+        <div>
+          <pf-page-head title="Zones en tension" sub="Identifiez les territoires prioritaires pour l'action publique."/>
+          <div class="pf-cols">
+            <pf-card title="Carte nationale">
+              @defer (on viewport) {
+                <pf-zone-map [zones]="zones()" [selected]="sel()" (sel)="sel.set($event)"/>
+              } @placeholder {
+                <div class="muted" style="min-height:300px;display:flex;align-items:center;justify-content:center">Chargement de la carte…</div>
+              }
+            </pf-card>
+            <pf-card title="Classement des zones" sub="Par nombre de ruptures">
+              @for (z of sortedZones(); track z.nom; let i = $index) {
+                <div class="pf-li">
+                  <span class="pf-liic" style="background:var(--blue);color:#fff;font-family:'Montserrat';font-weight:800">{{ i + 1 }}</span>
+                  <div class="pf-libody"><strong>{{ z.nom }}</strong><span>{{ z.ruptures }} ruptures signalées</span></div>
+                  <pf-tag [s]="ztag(z.niveau)">{{ z.niveau }}</pf-tag>
+                </div>
+              }
+              @if (sortedZones().length === 0) { <div class="muted" style="padding:14px 0">Aucune zone en tension.</div> }
+            </pf-card>
+          </div>
+        </div>
+      }
+
+      @case ('tension') {
+        <div>
+          <pf-page-head title="Médicaments en tension" sub="Suivi national des délais et niveaux de tension."/>
+          <pf-card title="Indicateurs par médicament">
+            <table class="pf-table">
+              <thead><tr><th>Médicament</th><th>Tension nationale</th><th>Délai moyen</th><th>Niveau</th></tr></thead>
+              <tbody>
+                @for (t of tension(); track t.nom) {
+                  <tr>
+                    <td><div class="pf-medname">{{ t.nom }}</div></td>
+                    <td style="min-width:160px">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <pf-bar [pct]="t.pct" [tone]="tone(t.pct)"/>
+                        <strong style="font-family:'Montserrat';font-size:13px;color:var(--blue)">{{ t.pct }}%</strong>
+                      </div>
+                    </td>
+                    <td class="muted">{{ t.delai }}</td>
+                    <td><pf-tag [s]="ttag(t.pct)">{{ tlabel(t.pct) }}</pf-tag></td>
+                  </tr>
+                }
+                @if (tension().length === 0) { <tr><td colspan="4" class="muted" style="text-align:center;padding:16px 0">Aucune tension nationale détectée.</td></tr> }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
+
+      @case ('rapport') {
+        <div>
+          <pf-page-head title="Rapports" sub="Synthèses périodiques pour les responsables de santé publique.">
+            <button actions class="btn btn-green btn-sm"><nv-icon name="doc" [size]="16"/> Générer un rapport</button>
+          </pf-page-head>
+          <div class="pf-cols3">
+            @for (r of reports; track r[0]) {
+              <pf-card>
+                <span class="pf-staticon blue" style="margin-bottom:14px"><nv-icon name="doc" [size]="20"/></span>
+                <h3 style="font-size:16px">{{ r[0] }}</h3>
+                <p class="muted" style="font-size:13.5px;margin:4px 0 14px">{{ r[1] }}</p>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <pf-tag [s]="r[3]">{{ r[2] }}</pf-tag>
+                  <button class="btn btn-ghost btn-sm" [disabled]="r[3] !== 'ok'">Consulter <nv-icon name="arrow" [size]="14"/></button>
+                </div>
+              </pf-card>
+            }
+          </div>
+          <pf-card title="Statistiques clés" sub="Indicateurs nationaux de suivi">
+            <div class="pf-cols3" style="margin-top:4px">
+              @for (k of keyStats; track k[0]) {
+                <div style="padding:4px 0">
+                  <span class="pf-staticon green" style="margin-bottom:10px"><nv-icon [name]="k[2]" [size]="18"/></span>
+                  <strong style="display:block;font-family:'Montserrat';font-size:22px;color:var(--blue)">{{ k[1] }}</strong>
+                  <span class="muted" style="font-size:13px">{{ k[0] }}</span>
+                </div>
+              }
+            </div>
+          </pf-card>
+        </div>
+      }
+    }

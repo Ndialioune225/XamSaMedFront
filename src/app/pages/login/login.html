@@ -1,0 +1,51 @@
+    <div class="pf-login">
+      <div class="pf-loginleft">
+        <button class="pf-back" (click)="back()"><nv-icon name="arrow" [size]="16" [rotate]="180"/> Retour au site</button>
+        <nv-logo [light]="true"/>
+        <div class="pf-loginhero">
+          <h1>L'accès aux médicaments,<br/>en temps réel.</h1>
+          <p>Connectez-vous à votre espace pour gérer vos stocks, suivre les alertes et orienter chaque demande.</p>
+          <div class="pf-loginpts">
+            @for (pt of points; track pt[1]) {
+              <div><span><nv-icon [name]="pt[0]" [size]="18"/></span>{{ pt[1] }}</div>
+            }
+          </div>
+        </div>
+        <span class="pf-loginfoot">© 2026 NOVAmedacces · DevTech</span>
+      </div>
+
+      <div class="pf-loginright">
+        <div class="pf-loginbox">
+          <span class="chip chip-green" style="margin-bottom:14px">Connexion sécurisée</span>
+          <h2>Connectez-vous</h2>
+          <p class="muted" style="margin-bottom:24px">Choisissez un profil de démonstration ou saisissez vos identifiants. Le rôle de votre espace est déterminé par votre compte.</p>
+
+          <div class="pf-roles">
+            @for (x of roles; track x.id) {
+              <button class="pf-role" [class.on]="role() === x.id" (click)="pick(x.id)">
+                <span class="pf-roleic"><nv-icon [name]="x.icon" [size]="22"/></span>
+                <span class="pf-roletxt"><strong>{{ x.label }}</strong><span>{{ x.desc }}</span></span>
+                <span class="pf-roleradio">@if (role() === x.id) { <nv-icon name="check" [size]="14"/> }</span>
+              </button>
+            }
+          </div>
+
+          <div class="pf-loginform">
+            <div class="pf-fieldrow">
+              <div class="s-field"><label>Identifiant (email)</label><input type="email" autocomplete="username" [value]="email()" (input)="setEmail($event)" placeholder="vous@exemple.sn"/></div>
+              <div class="s-field"><label>Mot de passe</label><input type="password" autocomplete="current-password" [value]="password()" (input)="setPassword($event)" (keyup.enter)="login()" placeholder="••••••••"/></div>
+            </div>
+
+            @if (error()) {
+              <div class="pf-loginerror"><nv-icon name="alert" [size]="16"/> {{ error() }}</div>
+            }
+
+            <button class="btn btn-green btn-lg" style="width:100%;justify-content:center" (click)="login()" [disabled]="loading()">
+              @if (loading()) { Connexion en cours… } @else { Accéder à l'espace {{ firstWord(current().label) }} <nv-icon name="arrow" [size]="18"/> }
+            </button>
+
+            <p class="pf-loginhint">Comptes de test : <strong>pharma&#64;xamsamed.test</strong> ou <strong>admin&#64;xamsamed.test</strong> · mot de passe <strong>password123</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>

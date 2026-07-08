@@ -1,0 +1,111 @@
+    @switch (section()) {
+      @case ('home') {
+        <div>
+          <pf-page-head title="Tableau de bord" sub="Pharmacie Centrale — Dakar Plateau">
+            <ng-container actions>
+              <button class="btn btn-outline btn-sm" (click)="section.set('stock')"><nv-icon name="box" [size]="16"/> Gérer le stock</button>
+              <button class="btn btn-green btn-sm" (click)="section.set('dem')"><nv-icon name="mail" [size]="16"/> Demandes</button>
+            </ng-container>
+          </pf-page-head>
+          <div class="pf-statgrid">
+            <pf-stat icon="box" tone="blue" label="Références en stock" [value]="stock().length"/>
+            <pf-stat icon="alert" tone="amber" label="Alertes de seuil" [value]="lowCount()"/>
+            <pf-stat icon="bell" tone="red" label="Ruptures / critiques" [value]="crit().length"/>
+            <pf-stat icon="mail" tone="green" label="Demandes en attente" [value]="newDem()"/>
+          </div>
+          <div class="pf-cols">
+            <pf-card title="État du stock" sub="Quantité vs seuil d'alerte">
+              <button right class="btn btn-ghost btn-sm" (click)="section.set('stock')">Tout voir</button>
+              @for (s of topStock(); track s.stockId) {
+                <div style="padding:12px 0;border-bottom:1px solid var(--gray-line)">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center">
+                    <span class="pf-medname">{{ s.name }}</span>
+                    <pf-tag [s]="s.s">{{ homeBadge(s) }}</pf-tag>
+                  </div>
+                  <pf-bar [pct]="pct(s)" [tone]="barTone(s)"/>
+                </div>
+              }
+              @if (topStock().length === 0) { <div class="muted" style="padding:16px 0">Aucune référence en stock.</div> }
+            </pf-card>
+            <pf-card title="Demandes ciblées" sub="Reçues récemment">
+              <span right class="chip chip-blue">{{ newDem() }} nouvelles</span>
+              @for (d of demandes(); track d.id) {
+                <div class="pf-li">
+                  <span class="pf-liic {{ d.urgency === 'Critique' ? 'red' : d.urgency === 'Élevé' ? 'amber' : '' }}"><nv-icon name="mail" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ d.medName }}</strong><span>{{ d.from }} · {{ d.qty }} u. · {{ d.quand }}</span></div>
+                  <pf-tag [s]="urg(d.urgency)">{{ d.urgency }}</pf-tag>
+                </div>
+              }
+              @if (demandes().length === 0) { <div class="muted" style="padding:16px 0">Aucune demande en attente.</div> }
+              <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:14px" (click)="section.set('dem')">Traiter les demandes</button>
+            </pf-card>
+          </div>
+        </div>
+      }
+
+      @case ('stock') {
+        <div>
+          <pf-page-head title="Gestion de stock" sub="Suivez vos quantités et seuils critiques.">
+            <button actions class="btn btn-green btn-sm"><nv-icon name="box" [size]="16"/> Ajouter une référence</button>
+          </pf-page-head>
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>Médicament</th><th>Forme</th><th>Disponible</th><th>Seuil</th><th>Niveau</th><th>État</th><th></th></tr></thead>
+              <tbody>
+                @for (s of stock(); track s.stockId) {
+                  <tr>
+                    <td><div class="pf-medname">{{ s.name }}</div><div class="pf-medsub">{{ s.reserved }} réservé(s)</div></td>
+                    <td><span class="chip chip-gray">{{ s.sub }}</span></td>
+                    <td><strong style="font-family:'Montserrat';color:var(--blue)">{{ s.q }}</strong></td>
+                    <td class="muted">{{ s.seuil }}</td>
+                    <td style="min-width:110px"><pf-bar [pct]="pct(s)" [tone]="barTone(s)"/></td>
+                    <td><pf-tag [s]="s.s">{{ stateLabel(s.s) }}</pf-tag></td>
+                    <td>
+                      @if (s.s !== 'ok') { <button class="btn btn-green btn-sm" (click)="restock(s)">Réapprov.</button> }
+                      @else { <span class="muted" style="font-size:12px">—</span> }
+                    </td>
+                  </tr>
+                }
+                @if (stock().length === 0) { <tr><td colspan="7" class="muted" style="padding:18px 0;text-align:center">Aucune référence en stock.</td></tr> }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
+
+      @case ('alert') {
+        <div>
+          <pf-page-head title="Alertes de seuil critique" sub="Anticipez les ruptures avant qu'elles n'arrivent."/>
+          @if (crit().length > 0) {
+            <div class="pf-banner">
+              <span class="pf-bannic"><nv-icon name="alert" [size]="22"/></span>
+              <div><strong>{{ crit().length }} médicament(s) sous le seuil critique</strong><p>Réapprovisionnez ou orientez les demandes vers une autre officine.</p></div>
+            </div>
+          }
+          <pf-card>
+            @for (s of alerts(); track s.stockId) {
+              <div class="pf-li">
+                <span class="pf-liic {{ s.s === 'low' ? 'amber' : 'red' }}"><nv-icon name="alert" [size]="18"/></span>
+                <div class="pf-libody"><strong>{{ s.name }}</strong><span>{{ s.q }} unité(s) restantes · seuil fixé à {{ s.seuil }}</span></div>
+                <div class="pf-li-act">
+                  <pf-tag [s]="s.s">{{ alertLabel(s.s) }}</pf-tag>
+                  <button class="btn btn-green btn-sm" (click)="restock(s)">Réapprovisionner</button>
+                </div>
+              </div>
+            }
+            @if (alerts().length === 0) {
+              <div style="text-align:center;padding:30px;color:var(--green)">
+                <nv-icon name="checkC" [size]="34"/>
+                <p style="margin-top:8px;color:var(--gray-text)">Aucune alerte active. Tous les stocks sont sains.</p>
+              </div>
+            }
+          </pf-card>
+        </div>
+      }
+
+      @case ('dem') { <app-pharma-demandes [demandes]="demandes()" (changed)="reload()"/> }
+
+      @case ('profil') {
+        <app-simple-profile role="pharma" title="Mon officine" name="Pharmacie Centrale" sub="Officine privée · Dakar Plateau" [fields]="profilFields"/>
+      }
+    }

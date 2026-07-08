@@ -1,0 +1,26 @@
+    <div>
+      <pf-page-head [title]="title()"/>
+      <div class="pf-cols">
+        <pf-card>
+          <div style="display:flex;gap:16px;align-items:center;margin-bottom:20px">
+            <span class="pf-roleic" style="width:60px;height:60px;border-radius:16px"><nv-icon [name]="roleIcon()" [size]="28"/></span>
+            <div><h3 style="font-size:20px">{{ name() }}</h3><span class="muted">{{ sub() }}</span></div>
+          </div>
+          @for (f of fields(); track f[0]) {
+            <div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--gray-line)">
+              <span class="muted" style="font-size:14px">{{ f[0] }}</span>
+              <strong style="font-family:'Montserrat';font-size:14px;color:var(--blue);text-align:right">{{ f[1] }}</strong>
+            </div>
+          }
+        </pf-card>
+        <pf-card title="Accès rapide" sub="QR code de votre espace">
+          <div class="pf-qr">
+            <div class="pf-qrcode"><pf-qr/></div>
+            <div>
+              <p class="muted" style="font-size:14px;margin-bottom:14px">Scannez ce code pour accéder instantanément à votre espace depuis un autre appareil.</p>
+              <button class="btn btn-outline btn-sm"><nv-icon name="qr" [size]="16"/> Partager mon accès</button>
+            </div>
+          </div>
+        </pf-card>
+      </div>
+    </div>

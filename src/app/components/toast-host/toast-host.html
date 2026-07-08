@@ -1,0 +1,12 @@
+    <div class="pf-toasts">
+      @for (t of platform.toasts(); track t.id) {
+        <div class="pf-toast {{ t.kind }}">
+          @switch (t.kind) {
+            @case ('ok') { <nv-icon name="checkC" [size]="19"/> }
+            @case ('alert') { <nv-icon name="alert" [size]="19"/> }
+            @default { <nv-icon name="bell" [size]="19"/> }
+          }
+          <span>{{ t.msg }}</span>
+        </div>
+      }
+    </div>

@@ -1,0 +1,91 @@
+    @switch (section()) {
+      @case ('search') {
+        <div>
+          <pf-page-head title="Rechercher un médicament" sub="Trouvez où votre traitement est réellement disponible, en temps réel."/>
+          <div class="pf-searchbar">
+            <div class="pf-sbinput">
+              <nv-icon name="search" [size]="20" color="var(--gray-text)" style="flex:none"/>
+              <input autofocus placeholder="Nom du médicament ou substance (ex. Morphine, Insuline…)" [value]="q()" (input)="onSearch($event)"/>
+              @if (q()) { <button (click)="clear()" style="color:var(--gray-text)"><nv-icon name="x" [size]="18"/></button> }
+            </div>
+            <button class="btn btn-primary"><nv-icon name="qr" [size]="18"/> Scanner</button>
+          </div>
+
+          @if (!q()) {
+            <div class="pf-suggest">
+              <span class="muted" style="font-size:13px;align-self:center;margin-right:4px">Recherches fréquentes :</span>
+              @for (s of suggestions; track s) {
+                <button class="pf-suggchip" (click)="setQuery(s)">{{ s }}</button>
+              }
+            </div>
+          }
+
+          @if (q() && searching()) {
+            <div class="muted" style="padding:18px 4px">Recherche en cours…</div>
+          }
+
+          @if (q() && !searching() && results().length === 0) {
+            <pf-card>
+              <div style="text-align:center;padding:30px;color:var(--gray-text)">
+                <nv-icon name="search" [size]="34" color="var(--gray)" style="margin-bottom:10px"/>
+                <p>Aucun médicament trouvé pour « {{ q() }} ».</p>
+              </div>
+            </pf-card>
+          }
+
+          @if (results().length > 0 && !active()) {
+            @for (m of results(); track m.id) {
+              <button class="pf-result" (click)="active.set(m)" style="width:100%;text-align:left;cursor:pointer">
+                <span class="pf-liic green"><nv-icon name="pill" [size]="20"/></span>
+                <div style="flex:1">
+                  <div class="pf-medname">{{ m.nom }} @if (m.crit) { <span class="chip chip-red" style="margin-left:6px">Critique</span> }</div>
+                  <div class="pf-medsub">{{ m.dci }} · {{ m.forme }}</div>
+                </div>
+                <nv-icon name="chevron" [size]="18" color="var(--gray)"/>
+              </button>
+            }
+          }
+
+          @if (active(); as a) {
+            <app-patient-results [med]="a" (back)="active.set(null)" (reserve)="reserve(a, $event)"/>
+          }
+        </div>
+      }
+
+      @case ('resa') {
+        <div>
+          <pf-page-head title="Mes réservations" sub="Suivez l'état de vos demandes et retraits."/>
+          @if (resas().length === 0) {
+            <pf-card>
+              <div style="text-align:center;padding:40px;color:var(--gray-text)">
+                <nv-icon name="cart" [size]="34" color="var(--gray)" style="margin-bottom:10px"/>
+                <p>Aucune réservation pour le moment.</p>
+                <button class="btn btn-green" style="margin-top:16px" (click)="section.set('search')">Rechercher un médicament</button>
+              </div>
+            </pf-card>
+          } @else {
+            <div class="pf-statgrid" style="grid-template-columns:1fr">
+              @for (r of resas(); track $index) {
+                <div class="card pf-li" style="padding:18px 22px">
+                  <span class="pf-liic {{ r.s === 'ok' ? 'green' : r.s === 'out' ? 'red' : 'amber' }}"><nv-icon name="pill" [size]="20"/></span>
+                  <div class="pf-libody">
+                    <strong>{{ r.medName }}</strong>
+                    <span>{{ r.pharmacyName }}</span>
+                  </div>
+                  <div style="text-align:right">
+                    <pf-tag [s]="r.s">{{ r.statut }}</pf-tag>
+                    <div class="pf-medsub" style="margin-top:6px">{{ r.quand }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @case ('phar') { <app-patient-pharmacies/> }
+
+      @case ('profil') {
+        <app-simple-profile role="patient" title="Mon profil" name="Awa Ndiaye" sub="Patiente / Accompagnante" [fields]="profilFields"/>
+      }
+    }

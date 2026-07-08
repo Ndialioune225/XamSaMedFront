@@ -1,0 +1,130 @@
+    @switch (section()) {
+      @case ('home') {
+        <div>
+          <pf-page-head title="Tableau de bord hôpital" sub="Hôpital Principal — Direction pharmacie"/>
+          <div class="pf-statgrid">
+            <pf-stat icon="alert" tone="red" label="Alertes internes actives" [value]="alertes().length"/>
+            <pf-stat icon="shield" tone="amber" label="Médicaments critiques suivis" [value]="critMeds().length"/>
+            <pf-stat icon="link" tone="green" label="Partenaires connectés" value="7" delta="2 nouveaux" [deltaUp]="true"/>
+            <pf-stat icon="clock" tone="blue" label="Délai moyen de réponse" value="42 min"/>
+          </div>
+          <div class="pf-cols">
+            <pf-card title="Alertes internes par service" sub="Stocks sous tension">
+              <span right class="chip chip-red">{{ alertes().length }} actives</span>
+              @for (a of alertes(); track a.id) {
+                <div class="pf-li">
+                  <span class="pf-liic {{ a.niveau === 'crit' ? 'red' : a.niveau === 'haute' ? 'amber' : '' }}"><nv-icon name="hospital" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ a.med }}</strong><span>{{ a.service }} · {{ a.reste }} de stock · {{ a.quand }}</span></div>
+                  <pf-tag [s]="ntag(a.niveau)">{{ a.reste }}</pf-tag>
+                </div>
+              }
+              @if (alertes().length === 0) { <div class="muted" style="padding:14px 0">Aucune alerte interne active.</div> }
+            </pf-card>
+            <pf-card title="Réseau partenaires" sub="Pharmacies & distributeurs reliés">
+              @for (p of partners; track p[0]) {
+                <div class="pf-li">
+                  <span class="pf-liic {{ p[2] === 'green' ? 'green' : '' }}"><nv-icon [name]="p[2] === 'green' ? 'pill' : 'truck'" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ p[0] }}</strong><span>{{ p[1] }}</span></div>
+                  <span class="chip chip-green"><span class="dot" style="background:var(--green)"></span> Connecté</span>
+                </div>
+              }
+            </pf-card>
+          </div>
+        </div>
+      }
+
+      @case ('alert') {
+        <div>
+          <pf-page-head title="Alertes internes" sub="Signalez et suivez les ruptures au niveau de chaque service.">
+            <button actions class="btn btn-green btn-sm"><nv-icon name="send" [size]="16"/> Signaler une rupture</button>
+          </pf-page-head>
+          <div class="pf-banner">
+            <span class="pf-bannic"><nv-icon name="alert" [size]="22"/></span>
+            <div><strong>Signalement rapide</strong><p>Chaque alerte est transmise instantanément aux pharmacies et distributeurs connectés.</p></div>
+          </div>
+          @for (a of alertes(); track a.id) {
+            <pf-card>
+              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                <span class="pf-liic {{ a.niveau === 'crit' ? 'red' : a.niveau === 'haute' ? 'amber' : 'green' }}" style="width:48px;height:48px"><nv-icon name="alert" [size]="22"/></span>
+                <div style="flex:1;min-width:200px">
+                  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <span class="pf-medname" style="font-size:16px">{{ a.med }}</span>
+                    <span class="chip chip-blue">{{ a.service }}</span>
+                    <pf-tag [s]="ntag(a.niveau)">{{ a.reste }} restant</pf-tag>
+                  </div>
+                  <p class="muted" style="font-size:13.5px;margin-top:4px">Signalée {{ a.quand }} · transmise au réseau partenaires</p>
+                </div>
+                <div class="pf-li-act">
+                  <button class="btn btn-outline btn-sm" (click)="askRestock()">Demander réappro.</button>
+                  <button class="btn btn-green btn-sm" (click)="resolve(a.id)">Marquer résolu</button>
+                </div>
+              </div>
+            </pf-card>
+          }
+          @if (alertes().length === 0) {
+            <pf-card>
+              <div style="text-align:center;padding:34px;color:var(--gray-text)">
+                <nv-icon name="checkC" [size]="34" color="var(--green)"/>
+                <p style="margin-top:8px">Aucune alerte interne active.</p>
+              </div>
+            </pf-card>
+          }
+        </div>
+      }
+
+      @case ('res') {
+        <div>
+          <pf-page-head title="Réseau de partenaires" sub="Établissez des connexions avec pharmacies et distributeurs.">
+            <button actions class="btn btn-green btn-sm"><nv-icon name="link" [size]="16"/> Connecter un partenaire</button>
+          </pf-page-head>
+          <div class="pf-half">
+            <pf-card title="Pharmacies connectées">
+              @for (p of connectedPharma(); track p.id) {
+                <div class="pf-li">
+                  <span class="pf-liic green"><nv-icon name="pill" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ p.nom }}</strong><span>{{ p.ville }} · {{ p.horaires }}</span></div>
+                  <span class="chip chip-green">Actif</span>
+                </div>
+              }
+              @if (connectedPharma().length === 0) { <div class="muted" style="padding:14px 0">Aucune pharmacie connectée.</div> }
+            </pf-card>
+            <pf-card title="Distributeurs connectés">
+              @for (d of distributors; track d[0]) {
+                <div class="pf-li">
+                  <span class="pf-liic"><nv-icon name="truck" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ d[0] }}</strong><span>{{ d[1] }}</span></div>
+                  <span class="chip chip-green">Actif</span>
+                </div>
+              }
+              <div class="pf-li">
+                <span class="pf-liic amber"><nv-icon name="truck" [size]="18"/></span>
+                <div class="pf-libody"><strong>PRA Régionale</strong><span>Demande de connexion en attente</span></div>
+                <button class="btn btn-green btn-sm">Accepter</button>
+              </div>
+            </pf-card>
+          </div>
+        </div>
+      }
+
+      @case ('crit') {
+        <div>
+          <pf-page-head title="Médicaments critiques" sub="Suivi renforcé des produits sensibles (stupéfiants, traitements vitaux)."/>
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>Médicament</th><th>Disponible (hôpital)</th><th>Niveau de suivi</th><th>État</th></tr></thead>
+              <tbody>
+                @for (m of critMeds(); track m.medId) {
+                  <tr>
+                    <td><div class="pf-medname">{{ m.name }}</div></td>
+                    <td><strong style="font-family:'Montserrat';color:var(--blue)">{{ m.available }}</strong> <span class="muted">u.</span></td>
+                    <td><span class="chip chip-blue"><nv-icon name="shield" [size]="13"/> Renforcé</span></td>
+                    <td><pf-tag [s]="critTag(m.s)">{{ critLabel(m.s) }}</pf-tag></td>
+                  </tr>
+                }
+                @if (critMeds().length === 0) { <tr><td colspan="4" class="muted" style="text-align:center;padding:16px 0">Aucun médicament critique suivi.</td></tr> }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
+    }

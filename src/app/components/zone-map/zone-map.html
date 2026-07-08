@@ -1,0 +1,23 @@
+    <div class="pf-map">
+      @for (z of zones(); track z.nom) {
+        <span class="pf-mapzone"
+              [style.left.%]="z.x" [style.top.%]="z.y"
+              [style.width.px]="size(z.niveau)" [style.height.px]="size(z.niveau)"
+              [style.background]="col(z.niveau)"></span>
+      }
+      @for (z of zones(); track z.nom) {
+        <button class="pf-mappin" [style.left.%]="z.x" [style.top.%]="z.y" (click)="sel.emit(z.nom)">
+          <span class="pf-mapdot" [style.background]="col(z.niveau)"
+                [style.outline]="selected() === z.nom ? '3px solid rgba(0,51,102,.3)' : 'none'"></span>
+        </button>
+      }
+      @for (z of zones(); track z.nom) {
+        <span class="pf-maplabel" [style.left.%]="z.x" [style.top.%]="z.y + 7">{{ z.nom }}</span>
+      }
+      <div class="pf-maplegend">
+        <div><span class="dot" style="background:#cf4338"></span> Critique</div>
+        <div><span class="dot" style="background:#d8a13a"></span> Tension haute</div>
+        <div><span class="dot" style="background:var(--green)"></span> Modérée</div>
+        <div><span class="dot" style="background:var(--blue)"></span> Faible</div>
+      </div>
+    </div>

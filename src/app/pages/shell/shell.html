@@ -1,0 +1,112 @@
+    @if (current(); as r) {
+      <div class="pf-app" [class.col]="collapsed()">
+        <pf-toast-host/>
+
+        <!-- Sidebar -->
+        <aside class="pf-side">
+          <div class="pf-sidetop">
+            <nv-logo [light]="true" (clicked)="exit()"/>
+          </div>
+          <div class="pf-rolepill">
+            <span class="pf-rolepillic"><nv-icon [name]="r.icon" [size]="18"/></span>
+            @if (!collapsed()) { <span class="pf-rolepilltxt"><span>Espace</span><strong>{{ shortLabel(r.label) }}</strong></span> }
+          </div>
+          <nav class="pf-nav">
+            @for (n of nav(); track n.id) {
+              <button class="pf-navitem" [class.on]="sec() === n.id" (click)="select(n.id)" [title]="n.label">
+                <span class="pf-navic"><nv-icon [name]="n.icon" [size]="20"/></span>
+                @if (!collapsed()) { <span>{{ n.label }}</span> }
+                @if (!collapsed() && n.badge) { <span class="pf-navbadge">{{ n.badge }}</span> }
+              </button>
+            }
+          </nav>
+          <div class="pf-sidefoot">
+            <button class="pf-navitem" (click)="toggleCollapse()" title="Réduire">
+              <span class="pf-navic"><nv-icon name="chevron" [size]="20" [rotate]="collapsed() ? 0 : 180"/></span>
+              @if (!collapsed()) { <span>Réduire</span> }
+            </button>
+            <button class="pf-navitem" (click)="exit()" title="Quitter">
+              <span class="pf-navic"><nv-icon name="logout" [size]="20"/></span>
+              @if (!collapsed()) { <span>Quitter la plateforme</span> }
+            </button>
+          </div>
+        </aside>
+
+        <!-- Main -->
+        <div class="pf-main">
+          <header class="pf-top">
+            <div class="pf-topsearch">
+              <nv-icon name="search" [size]="18" color="var(--gray-text)"/>
+              <input placeholder="Rechercher un médicament, une officine…"/>
+            </div>
+            <div class="pf-topright">
+              <div class="pf-notifwrap">
+                <button class="pf-iconbtn" [class.on]="notifOpen()" (click)="toggleNotif($event)">
+                  <nv-icon name="bell" [size]="20"/>
+                  @if (notifs().length > 0) { <span class="pf-notifdot">{{ notifs().length }}</span> }
+                </button>
+                @if (notifOpen()) {
+                  <div class="pf-notifpanel card">
+                    <div class="pf-notifhead"><strong>Notifications</strong><span class="chip chip-green">{{ notifs().length }} nouvelles</span></div>
+                    @for (n of notifs(); track n.t) {
+                      <div class="pf-notifitem">
+                        <span class="pf-notificon {{ n.s }}"><nv-icon [name]="n.icon" [size]="16"/></span>
+                        <div><strong>{{ n.t }}</strong><span>{{ n.d }}</span></div>
+                      </div>
+                    }
+                    @if (notifs().length === 0) { <p class="muted" style="padding:14px;font-size:13px">Aucune notification.</p> }
+                  </div>
+                }
+              </div>
+
+              <div class="pf-rolesw">
+                <button class="pf-roleswbtn" (click)="toggleRoleMenu($event)">
+                  <span class="pf-avatar"><nv-icon [name]="r.icon" [size]="16"/></span>
+                  <span class="pf-rolesname">{{ shortLabel(r.label) }}</span>
+                  <nv-icon name="chevD" [size]="16" color="var(--gray-text)"/>
+                </button>
+                @if (roleMenu()) {
+                  <div class="pf-rolemenu card">
+                    <span class="pf-rolemenuh">Changer d'espace</span>
+                    @for (x of roles; track x.id) {
+                      <button class="pf-rolemenuit" [class.on]="x.id === r.id" (click)="switchRole(x.id)">
+                        <span class="pf-rolemenuic"><nv-icon [name]="x.icon" [size]="16"/></span>{{ x.label }}
+                        @if (x.id === r.id) { <nv-icon name="check" [size]="15" color="var(--green)" style="margin-left:auto"/> }
+                      </button>
+                    }
+                    <button class="pf-rolemenuit" (click)="exit()" style="border-top:1px solid var(--gray-line);margin-top:4px;padding-top:12px;color:var(--blue)">
+                      <span class="pf-rolemenuic"><nv-icon name="logout" [size]="16"/></span>Quitter la plateforme
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          </header>
+
+          <main class="pf-content" (click)="closeMenus()">
+            @switch (r.id) {
+              @case ('patient') {
+                @defer (on immediate) { <app-patient-dash [(section)]="sec"/> }
+                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+              }
+              @case ('pharma') {
+                @defer (on immediate) { <app-pharma-dash [(section)]="sec"/> }
+                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+              }
+              @case ('distrib') {
+                @defer (on immediate) { <app-distrib-dash [section]="sec()"/> }
+                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+              }
+              @case ('hopital') {
+                @defer (on immediate) { <app-hopital-dash [section]="sec()"/> }
+                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+              }
+              @case ('sante') {
+                @defer (on immediate) { <app-sante-dash [section]="sec()"/> }
+                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+              }
+            }
+          </main>
+        </div>
+      </div>
+    }
