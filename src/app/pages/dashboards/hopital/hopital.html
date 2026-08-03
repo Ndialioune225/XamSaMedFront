@@ -36,7 +36,7 @@
       @case ('alert') {
         <div>
           <pf-page-head title="Alertes internes" sub="Signalez et suivez les ruptures au niveau de chaque service.">
-            <button actions class="btn btn-green btn-sm"><nv-icon name="send" [size]="16"/> Signaler une rupture</button>
+            <button actions class="btn btn-green btn-sm" (click)="signalRupture()"><nv-icon name="send" [size]="16"/> Signaler une rupture</button>
           </pf-page-head>
           <div class="pf-banner">
             <span class="pf-bannic"><nv-icon name="alert" [size]="22"/></span>
@@ -75,7 +75,7 @@
       @case ('res') {
         <div>
           <pf-page-head title="Réseau de partenaires" sub="Établissez des connexions avec pharmacies et distributeurs.">
-            <button actions class="btn btn-green btn-sm"><nv-icon name="link" [size]="16"/> Connecter un partenaire</button>
+            <button actions class="btn btn-green btn-sm" (click)="connectPartner()"><nv-icon name="link" [size]="16"/> Connecter un partenaire</button>
           </pf-page-head>
           <div class="pf-half">
             <pf-card title="Pharmacies connectées">
@@ -127,4 +127,58 @@
           </pf-card>
         </div>
       }
+    }
+
+    <!-- Modals -->
+    @if (signalModal()) {
+      <div class="pf-modal-overlay" (click)="signalModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitSignal(sMed.value, sSrv.value, sQty.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Signaler une rupture interne</h3>
+            <button type="button" class="pf-modal-close" (click)="signalModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Médicament concerné *</label><input #sMed required placeholder="Nom du médicament"/></div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Service demandeur *</label>
+                <select #sSrv required>
+                  <option value="Urgences">Urgences</option>
+                  <option value="Réanimation">Réanimation</option>
+                  <option value="Cardiologie">Cardiologie</option>
+                  <option value="Pharmacie centrale">Pharmacie centrale</option>
+                </select>
+              </div>
+              <div class="s-field" style="margin:0"><label>Quantité restante *</label><input #sQty required type="number" min="0" placeholder="Ex: 5"/></div>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="signalModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Signaler l'alerte</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (connectModal()) {
+      <div class="pf-modal-overlay" (click)="connectModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitConnect(cCode.value, cType.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Connecter un partenaire</h3>
+            <button type="button" class="pf-modal-close" (click)="connectModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Type de partenaire *</label>
+              <select #cType required>
+                <option value="Pharmacie">Pharmacie d'officine</option>
+                <option value="Distributeur">Distributeur / Grossiste</option>
+              </select>
+            </div>
+            <div class="s-field" style="margin:0"><label>Code d'identification ou Email *</label><input #cCode required placeholder="Ex: PH-12345 ou contact@pharma.com"/></div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="connectModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Envoyer la demande</button>
+          </div>
+        </form>
+      </div>
     }

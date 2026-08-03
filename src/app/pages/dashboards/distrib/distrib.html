@@ -44,7 +44,7 @@
       @case ('reg') {
         <div>
           <pf-page-head title="Demandes régionales" sub="Gérez et planifiez les réapprovisionnements par zone.">
-            <button actions class="btn btn-green btn-sm"><nv-icon name="truck" [size]="16"/> Planifier une livraison</button>
+            <button actions class="btn btn-green btn-sm" (click)="planLivraison()"><nv-icon name="truck" [size]="16"/> Planifier une livraison</button>
           </pf-page-head>
           @for (d of demandes(); track d.id) {
             <pf-card>
@@ -120,4 +120,33 @@
           </pf-card>
         </div>
       }
+    }
+
+    <!-- Modals -->
+    @if (planModal()) {
+      <div class="pf-modal-overlay" (click)="planModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitPlan(pZone.value, pMed.value, pQty.value, pDate.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Planifier une livraison</h3>
+            <button type="button" class="pf-modal-close" (click)="planModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Zone de destination *</label>
+              <select #pZone required>
+                <option value="">Sélectionnez une zone</option>
+                @for (z of zones(); track z.nom) { <option [value]="z.nom">{{ z.nom }}</option> }
+              </select>
+            </div>
+            <div class="s-field" style="margin:0"><label>Médicament *</label><input #pMed required placeholder="Nom du médicament"/></div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Quantité (unités) *</label><input #pQty required type="number" min="1" placeholder="Ex: 500"/></div>
+              <div class="s-field" style="margin:0"><label>Date de livraison prévue *</label><input #pDate required type="date"/></div>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="planModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Planifier</button>
+          </div>
+        </form>
+      </div>
     }

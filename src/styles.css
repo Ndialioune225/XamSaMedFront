@@ -441,6 +441,18 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .pf-toast.info{border-left-color:var(--blue)}.pf-toast.info svg{color:var(--blue)}
 @keyframes toastin{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 
+/* ===================== MODALS ===================== */
+.pf-modal-overlay{position:fixed;inset:0;background:rgba(0,34,71,.4);backdrop-filter:blur(3px);z-index:150;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadein .2s ease}
+.pf-modal{background:#fff;border-radius:var(--r-lg);width:100%;max-width:500px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;max-height:90vh;animation:modalin .3s cubic-bezier(.16,1,.3,1)}
+.pf-modal-head{padding:20px 24px;border-bottom:1px solid var(--gray-line);display:flex;justify-content:space-between;align-items:center}
+.pf-modal-head h3{font-size:19px;font-weight:800;color:var(--blue)}
+.pf-modal-close{color:var(--gray-text);transition:.15s}
+.pf-modal-close:hover{color:var(--blue);background:var(--gray-bg);border-radius:8px}
+.pf-modal-body{padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.pf-modal-foot{padding:16px 24px;border-top:1px solid var(--gray-line);display:flex;justify-content:flex-end;gap:12px;background:var(--gray-bg);border-radius:0 0 var(--r-lg) var(--r-lg)}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes modalin{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
 /* ===================== PRIMITIVES DASHBOARD ===================== */
 .pf-pagehead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:24px;flex-wrap:wrap}
 .pf-pagehead h1{font-size:27px;font-weight:800}

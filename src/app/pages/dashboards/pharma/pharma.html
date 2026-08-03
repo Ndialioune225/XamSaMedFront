@@ -46,7 +46,7 @@
       @case ('stock') {
         <div>
           <pf-page-head title="Gestion de stock" sub="Suivez vos quantités et seuils critiques.">
-            <button actions class="btn btn-green btn-sm"><nv-icon name="box" [size]="16"/> Ajouter une référence</button>
+            <button actions class="btn btn-green btn-sm" (click)="addRefModal.set(true)"><nv-icon name="box" [size]="16"/> Ajouter une référence</button>
           </pf-page-head>
           <pf-card>
             <table class="pf-table">
@@ -108,4 +108,50 @@
       @case ('profil') {
         <app-simple-profile role="pharma" title="Mon officine" name="Pharmacie Centrale" sub="Officine privée · Dakar Plateau" [fields]="profilFields"/>
       }
+    }
+
+    <!-- Modals -->
+    @if (addRefModal()) {
+      <div class="pf-modal-overlay" (click)="addRefModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitAddRef(medName.value, medForm.value, medQty.value, medSeuil.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Ajouter une référence</h3>
+            <button type="button" class="pf-modal-close" (click)="addRefModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Médicament *</label><input #medName required placeholder="Nom du médicament (ex: Paracétamol)"/></div>
+            <div class="s-field" style="margin:0"><label>Forme / Dosage</label><input #medForm placeholder="Ex: Comprimé 500mg"/></div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Quantité initiale *</label><input #medQty required type="number" min="0" placeholder="0"/></div>
+              <div class="s-field" style="margin:0"><label>Seuil d'alerte *</label><input #medSeuil required type="number" min="0" placeholder="10"/></div>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="addRefModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Ajouter au stock</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (restockModal(); as s) {
+      <div class="pf-modal-overlay" (click)="restockModal.set(null)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitRestock(rQty.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Réapprovisionner</h3>
+            <button type="button" class="pf-modal-close" (click)="restockModal.set(null)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+              <span class="pf-liic blue"><nv-icon name="box" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ s.name }}</strong><span>Actuellement en stock : {{ s.q }} u. (seuil : {{ s.seuil }})</span></div>
+            </div>
+            <div class="s-field" style="margin:0"><label>Quantité reçue / à ajouter *</label><input #rQty required type="number" min="1" [value]="s.seuil > 0 ? (s.seuil * 3) : 100" /></div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="restockModal.set(null)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Valider</button>
+          </div>
+        </form>
+      </div>
     }

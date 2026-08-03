@@ -32,6 +32,7 @@ export class DistribDash {
   readonly zones = signal<ZoneInfo[]>([]);
   readonly autoAlerts = signal<ShortageAlert[]>([]);
   readonly sel = signal<string | null>(null);
+  readonly planModal = signal(false);
 
   // Prévisions dérivées des ruptures réelles signalées.
   readonly tension = computed<Tension[]>(() => this.autoAlerts().map(a => ({
@@ -63,5 +64,12 @@ export class DistribDash {
   plan(id: string, zone: string): void {
     this.demandes.update(list => list.filter(d => d.id !== id));
     this.platform.notify('Livraison planifiée vers ' + zone, 'ok');
+  }
+  planLivraison(): void { this.planModal.set(true); }
+
+  submitPlan(zone: string, med: string, qty: string, date: string): void {
+    // Dans une version complète, on appellerait l'API ici pour planifier la livraison.
+    this.platform.notify(`Livraison de ${qty}u de ${med} planifiée pour le ${date} vers ${zone}`, 'ok');
+    this.planModal.set(false);
   }
 }

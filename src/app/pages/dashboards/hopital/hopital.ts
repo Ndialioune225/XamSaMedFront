@@ -29,6 +29,9 @@ export class HopitalDash {
   readonly critMeds = signal<CritMedRow[]>([]);
   readonly connectedPharma = signal<Pharmacy[]>([]);
 
+  readonly signalModal = signal(false);
+  readonly connectModal = signal(false);
+
   readonly partners: readonly [string, string, string][] = [
     ['Pharmacie de la Gare', 'Officine 24h/24', 'green'],
     ['PNA Dakar', 'Distributeur régional', 'blue'],
@@ -60,5 +63,20 @@ export class HopitalDash {
       next: () => { this.platform.notify('Alerte traitée et transmise au réseau', 'ok'); this.reload(); },
       error: () => this.platform.notify('Échec de la résolution', 'alert'),
     });
+  }
+
+  signalRupture(): void { this.signalModal.set(true); }
+  connectPartner(): void { this.connectModal.set(true); }
+
+  submitSignal(med: string, service: string, qty: string): void {
+    // Appel API simulé
+    this.platform.notify(`Alerte de rupture signalée pour ${med} (${service})`, 'ok');
+    this.signalModal.set(false);
+  }
+
+  submitConnect(partnerCode: string, type: string): void {
+    // Appel API simulé
+    this.platform.notify(`Demande de connexion envoyée au partenaire (${type})`, 'ok');
+    this.connectModal.set(false);
   }
 }

@@ -130,4 +130,5 @@ export class SiteVitrine implements AfterViewInit, OnDestroy {
     this.form = { nom: '', email: '', tel: '', profil: 'Patient / Accompagnant', message: '' };
   }
   subscribe(e: Event): void { e.preventDefault(); this.newsOk.set(true); }
+  mentionsLegales(e: Event): void { e.preventDefault(); alert('Les mentions légales seront disponibles prochainement.'); }
 }

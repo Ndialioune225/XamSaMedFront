@@ -31,6 +31,8 @@ export class SanteDash {
   readonly zones = signal<ZoneInfo[]>([]);
   readonly overview = signal<ApiOverview>({ ruptures: 0, low: 0, zones_tracked: 0, medicines_in_tension: 0 });
 
+  readonly generateModal = signal(false);
+
   readonly topTension = computed(() => this.tension().slice(0, 5));
   readonly critZones = computed(() => this.zones().filter(z => z.niveau === 'crit').length);
   readonly tensionMid = computed(() => this.tension().filter(t => t.pct > 40).length);
@@ -57,4 +59,12 @@ export class SanteDash {
   ztag(n: string): string { return n === 'crit' ? 'crit' : n === 'haute' ? 'low' : 'ok'; }
   ttag(pct: number): string { return pct > 70 ? 'crit' : pct > 40 ? 'low' : 'ok'; }
   tlabel(pct: number): string { return pct > 70 ? 'Critique' : pct > 40 ? 'Élevée' : 'Modérée'; }
+
+  generateReport(): void { this.generateModal.set(true); }
+  exportReport(): void { /* Logic for export */ }
+
+  submitGenerate(period: string, type: string): void {
+    // Appel API simulé
+    this.generateModal.set(false);
+  }
 }

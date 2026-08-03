@@ -1,8 +1,8 @@
     @switch (section()) {
       @case ('home') {
         <div>
-          <pf-page-head title="Vue nationale" sub="Pilotage de l'accès aux médicaments — responsable santé publique">
-            <button actions class="btn btn-outline btn-sm"><nv-icon name="doc" [size]="16"/> Exporter le rapport</button>
+          <pf-page-head title="Tableau de bord national" sub="Ministère de la Santé — Vue d'ensemble des approvisionnements">
+            <button actions class="btn btn-outline btn-sm" (click)="exportReport()"><nv-icon name="doc" [size]="16"/> Exporter le rapport</button>
           </pf-page-head>
           <div class="pf-statgrid">
             <pf-stat icon="alert" tone="red" label="Zones critiques" [value]="critZones()"/>
@@ -88,8 +88,8 @@
 
       @case ('rapport') {
         <div>
-          <pf-page-head title="Rapports" sub="Synthèses périodiques pour les responsables de santé publique.">
-            <button actions class="btn btn-green btn-sm"><nv-icon name="doc" [size]="16"/> Générer un rapport</button>
+          <pf-page-head title="Rapports et analyses" sub="Données consolidées sur les approvisionnements.">
+            <button actions class="btn btn-green btn-sm" (click)="generateReport()"><nv-icon name="doc" [size]="16"/> Générer un rapport</button>
           </pf-page-head>
           <div class="pf-cols3">
             @for (r of reports; track r[0]) {
@@ -117,4 +117,37 @@
           </pf-card>
         </div>
       }
+    }
+
+    <!-- Modals -->
+    @if (generateModal()) {
+      <div class="pf-modal-overlay" (click)="generateModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitGenerate(gPeriod.value, gType.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Générer un rapport</h3>
+            <button type="button" class="pf-modal-close" (click)="generateModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Période d'analyse *</label>
+              <select #gPeriod required>
+                <option value="Cette semaine">Cette semaine</option>
+                <option value="Ce mois-ci">Ce mois-ci</option>
+                <option value="Le mois dernier">Le mois dernier</option>
+                <option value="Année en cours">Année en cours</option>
+              </select>
+            </div>
+            <div class="s-field" style="margin:0"><label>Type de rapport *</label>
+              <select #gType required>
+                <option value="Synthèse nationale">Synthèse nationale</option>
+                <option value="Tensions critiques">Tensions critiques uniquement</option>
+                <option value="Rapport régional détaillé">Rapport régional détaillé</option>
+              </select>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="generateModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Générer</button>
+          </div>
+        </form>
+      </div>
     }
