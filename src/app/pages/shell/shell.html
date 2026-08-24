@@ -60,25 +60,10 @@
               </div>
 
               <div class="pf-rolesw">
-                <button class="pf-roleswbtn" (click)="toggleRoleMenu($event)">
+                <div class="pf-roleswbtn" style="cursor:default">
                   <span class="pf-avatar"><nv-icon [name]="r.icon" [size]="16"/></span>
                   <span class="pf-rolesname">{{ shortLabel(r.label) }}</span>
-                  <nv-icon name="chevD" [size]="16" color="var(--gray-text)"/>
-                </button>
-                @if (roleMenu()) {
-                  <div class="pf-rolemenu card">
-                    <span class="pf-rolemenuh">Changer d'espace</span>
-                    @for (x of roles; track x.id) {
-                      <button class="pf-rolemenuit" [class.on]="x.id === r.id" (click)="switchRole(x.id)">
-                        <span class="pf-rolemenuic"><nv-icon [name]="x.icon" [size]="16"/></span>{{ x.label }}
-                        @if (x.id === r.id) { <nv-icon name="check" [size]="15" color="var(--green)" style="margin-left:auto"/> }
-                      </button>
-                    }
-                    <button class="pf-rolemenuit" (click)="exit()" style="border-top:1px solid var(--gray-line);margin-top:4px;padding-top:12px;color:var(--blue)">
-                      <span class="pf-rolemenuic"><nv-icon name="logout" [size]="16"/></span>Quitter la plateforme
-                    </button>
-                  </div>
-                }
+                </div>
               </div>
             </div>
           </header>
@@ -94,7 +79,7 @@
                 @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
               }
               @case ('distrib') {
-                @defer (on immediate) { <app-distrib-dash [section]="sec()"/> }
+                @defer (on immediate) { <app-distrib-dash [(section)]="sec"/> }
                 @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
               }
               @case ('hopital') {
@@ -102,7 +87,7 @@
                 @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
               }
               @case ('sante') {
-                @defer (on immediate) { <app-sante-dash [section]="sec()"/> }
+                @defer (on immediate) { <app-sante-dash [(section)]="sec"/> }
                 @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
               }
             }

@@ -4,7 +4,7 @@
 @import "primeicons/primeicons.css";
 
 /* ===========================================================
-   NOVAmedacces — Charte graphique DevTech
+   XamSaMed — Charte graphique DevTech
    Couleurs principales : Bleu foncé #003366 · Vert émeraude #2E8B57 · Blanc #FFFFFF
    Couleurs secondaires : Gris moyen #A9A9A9 · Noir #000000
    Typo : Montserrat (titres) · Open Sans (corps)
@@ -109,7 +109,7 @@ img{max-width:100%;display:block}
 nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-toast-host,app-login,app-shell,app-patient-dash,app-pharma-dash,app-distrib-dash,app-hopital-dash,app-sante-dash,app-simple-profile,app-patient-results,app-patient-pharmacies{display:contents}
 
 /* ============================================================
-   NOVAmedacces — Styles du site vitrine
+   XamSaMed — Styles du site vitrine
    ============================================================ */
 .s-site{overflow-x:hidden}
 .nv-logo{background:none}
@@ -329,7 +329,7 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 }
 
 /* ============================================================
-   NOVAmedacces — Styles plateforme (login + app shell + dashboards)
+   XamSaMed — Styles plateforme (login + app shell + dashboards)
    ============================================================ */
 /* ===================== LOGIN ===================== */
 .pf-login{min-height:100vh;display:grid;grid-template-columns:1fr 1.05fr}

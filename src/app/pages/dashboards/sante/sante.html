@@ -91,15 +91,15 @@
           <pf-page-head title="Rapports et analyses" sub="Données consolidées sur les approvisionnements.">
             <button actions class="btn btn-green btn-sm" (click)="generateReport()"><nv-icon name="doc" [size]="16"/> Générer un rapport</button>
           </pf-page-head>
-          <div class="pf-cols3">
-            @for (r of reports; track r[0]) {
+          <div class="pf-cols3" style="margin-bottom: 17px;">
+            @for (r of reports(); track r.period) {
               <pf-card>
                 <span class="pf-staticon blue" style="margin-bottom:14px"><nv-icon name="doc" [size]="20"/></span>
-                <h3 style="font-size:16px">{{ r[0] }}</h3>
-                <p class="muted" style="font-size:13.5px;margin:4px 0 14px">{{ r[1] }}</p>
+                <h3 style="font-size:16px">{{ r.period }}</h3>
+                <p class="muted" style="font-size:13.5px;margin:4px 0 14px">{{ r.type }}</p>
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <pf-tag [s]="r[3]">{{ r[2] }}</pf-tag>
-                  <button class="btn btn-ghost btn-sm" [disabled]="r[3] !== 'ok'">Consulter <nv-icon name="arrow" [size]="14"/></button>
+                  <pf-tag [s]="r.s">{{ r.status }}</pf-tag>
+                  <button class="btn btn-ghost btn-sm" [disabled]="r.status !== 'Prêt'" (click)="exportReport(r.type)">Consulter <nv-icon name="arrow" [size]="14"/></button>
                 </div>
               </pf-card>
             }

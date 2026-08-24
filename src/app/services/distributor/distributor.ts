@@ -4,6 +4,7 @@ import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiRegionalDemand, ApiZone, DistributorAlertsResponse, ShortageAlert } from '../../interfaces/api';
 import { DemandeReg, ZoneInfo, ZoneLevel } from '../../interfaces/models';
+import { AuthService } from '../auth/auth';
 
 /** Coordonnées (% sur la carte) des principales villes du Sénégal. */
 const CITY_GEO: Record<string, { x: number; y: number }> = {
@@ -28,10 +29,13 @@ export class DistributorService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
 
+  private readonly auth = inject(AuthService);
+
   /** GET /distributor/alerts — ruptures signalées par les officines. */
   alerts(): Observable<ShortageAlert[]> {
     return this.http.get<DistributorAlertsResponse>(`${this.base}/distributor/alerts`).pipe(
       map(r => r.data ?? []),
+      map(alerts => this.applyScopeFilter(alerts, 'alert')),
       catchError(() => of([])),
     );
   }
@@ -40,6 +44,7 @@ export class DistributorService {
   regionalDemands(): Observable<DemandeReg[]> {
     return this.http.get<{ data: ApiRegionalDemand[] }>(`${this.base}/distributor/regional-demands`).pipe(
       map(r => r.data.map(toDemandeReg)),
+      map(demands => this.applyScopeFilter(demands, 'demand')),
       catchError(() => of([])),
     );
   }
@@ -48,8 +53,79 @@ export class DistributorService {
   zones(): Observable<ZoneInfo[]> {
     return this.http.get<{ data: ApiZone[] }>(`${this.base}/distributor/zones`).pipe(
       map(r => r.data.map(z => toZoneInfo(z.name, z.level, z.ruptures))),
+      map(zones => this.applyScopeFilter(zones, 'zone')),
       catchError(() => of([])),
     );
+  }
+
+  // --- API LIVRAISONS (DIS-006 à DIS-010) ---
+
+  /** GET /distributor/deliveries */
+  deliveries(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/distributor/deliveries`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** POST /distributor/deliveries */
+  createDelivery(zone: string, med: string, qty: number, date: string): Observable<unknown> {
+    return this.http.post(`${this.base}/distributor/deliveries`, { zone, medicine: med, qty, date });
+  }
+
+  /** PUT /distributor/deliveries/{id} */
+  updateDelivery(id: string, qty: number, date: string): Observable<unknown> {
+    return this.http.put(`${this.base}/distributor/deliveries/${id}`, { qty, date });
+  }
+
+  /** POST /distributor/deliveries/{id}/start */
+  startDelivery(id: string): Observable<unknown> {
+    return this.http.post(`${this.base}/distributor/deliveries/${id}/start`, {});
+  }
+
+  /** POST /distributor/deliveries/{id}/deliver */
+  changeDeliveryStatus(id: string, status: string): Observable<unknown> {
+    return this.http.post(`${this.base}/distributor/deliveries/${id}/${status === 'Livrée' ? 'deliver' : 'cancel'}`, {});
+  }
+
+  /** GET /distributor/previsions — prévisions basées sur les données réelles. */
+  previsions(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/distributor/previsions`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** Filtre les données selon les règles DIS-SCOPE (PNA vs PRA vs PRIVATE) */
+  private applyScopeFilter<T>(items: T[], type: 'alert' | 'demand' | 'zone'): T[] {
+    const user = this.auth.user();
+    if (!user || user.role !== 'distributor_user') return items;
+    
+    // On cast profile_meta pour accéder aux attributs du distributeur
+    const meta = user.profile_meta as any;
+    const distType = meta?.type || 'PNA'; // Par défaut PNA si non défini
+    const region = meta?.region;
+
+    if (distType === 'PNA') {
+      return items; // DIS-SCOPE-001: Vue nationale complète
+    }
+
+    if (distType === 'PRA' && region) {
+      // DIS-SCOPE-002: Vue régionale uniquement
+      return items.filter(item => {
+        if (type === 'demand') return (item as unknown as DemandeReg).zone === region;
+        if (type === 'zone') return (item as unknown as ZoneInfo).nom === region;
+        // Pour les alertes, on simule un filtrage ou on les laisse passer si la structure ne permet pas de filtrer géographiquement ici
+        return true; 
+      });
+    }
+
+    if (distType === 'PRIVATE') {
+      // DIS-SCOPE-005: Distributeur privé (limité aux partenaires privés, simulé ici)
+      return items; 
+    }
+
+    return items;
   }
 }
 

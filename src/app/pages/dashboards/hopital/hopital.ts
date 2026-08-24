@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -24,13 +24,17 @@ export class HopitalDash {
   private readonly hospital = inject(HospitalService);
   private readonly structures = inject(StructureService);
 
-  readonly section = input.required<string>();
+  readonly section = model.required<string>();
   readonly alertes = signal<AlerteHop[]>([]);
   readonly critMeds = signal<CritMedRow[]>([]);
   readonly connectedPharma = signal<Pharmacy[]>([]);
+  readonly alertHistory = signal<any[]>([]);
 
   readonly signalModal = signal(false);
   readonly connectModal = signal(false);
+
+  readonly activeAlerts = computed(() => this.alertes().filter(a => a.niveau === 'crit' || a.niveau === 'haute'));
+  readonly resolvedCount = computed(() => this.alertHistory().filter(a => a.resolved).length);
 
   readonly partners: readonly [string, string, string][] = [
     ['Pharmacie de la Gare', 'Officine 24h/24', 'green'],
@@ -44,12 +48,21 @@ export class HopitalDash {
 
   constructor() {
     this.reload();
+    // Charger les partenaires depuis l'API réelle
+    this.hospital.partners().subscribe({ next: p => this.realPartners.set(p), error: () => { /* ignore */ } });
     this.structures.pharmacies().subscribe({ next: p => this.connectedPharma.set(p.slice(0, 3)), error: () => { /* ignore */ } });
   }
+
+  readonly realPartners = signal<any[]>([]);
+  readonly dashboardData = signal<any>({});
 
   reload(): void {
     this.hospital.alerts().subscribe({ next: a => this.alertes.set(a), error: () => { /* ignore */ } });
     this.hospital.criticalMedicines().subscribe({ next: m => this.critMeds.set(m), error: () => { /* ignore */ } });
+    // HOS-006: Historique des alertes via API réelle
+    this.hospital.alertHistory().subscribe({ next: h => this.alertHistory.set(h), error: () => { /* ignore */ } });
+    // Dashboard data
+    this.hospital.dashboard().subscribe({ next: d => this.dashboardData.set(d), error: () => { /* ignore */ } });
   }
 
   ntag(n: string): string { return n === 'crit' ? 'crit' : n === 'haute' ? 'low' : 'new'; }
@@ -69,14 +82,36 @@ export class HopitalDash {
   connectPartner(): void { this.connectModal.set(true); }
 
   submitSignal(med: string, service: string, qty: string): void {
-    // Appel API simulé
-    this.platform.notify(`Alerte de rupture signalée pour ${med} (${service})`, 'ok');
-    this.signalModal.set(false);
+    const remaining = parseInt(qty, 10);
+    // HOS-002 + HOS-003: Signaler la rupture via l'API réelle
+    this.hospital.createAlert(med, service, 'high', remaining).subscribe({
+      next: () => {
+        this.platform.notify(`Alerte signalée pour ${med} (${service}) — réseau notifié automatiquement`, 'ok');
+        this.signalModal.set(false);
+        this.reload();
+      },
+      error: () => this.platform.notify('Échec du signalement', 'alert'),
+    });
   }
 
   submitConnect(partnerCode: string, type: string): void {
-    // Appel API simulé
-    this.platform.notify(`Demande de connexion envoyée au partenaire (${type})`, 'ok');
-    this.connectModal.set(false);
+    // Appel API réel (recherche + ajout partenaire)
+    this.hospital.searchPartners(partnerCode).subscribe({
+      next: results => {
+        if (results.length > 0) {
+          this.hospital.addPartner(results[0].id, type).subscribe({
+            next: () => {
+              this.platform.notify(`Partenaire ${partnerCode} connecté avec succès`, 'ok');
+              this.connectModal.set(false);
+              this.hospital.partners().subscribe({ next: p => this.realPartners.set(p), error: () => {} });
+            },
+            error: () => this.platform.notify('Échec de la connexion', 'alert'),
+          });
+        } else {
+          this.platform.notify(`Aucun partenaire trouvé pour "${partnerCode}"`, 'alert');
+        }
+      },
+      error: () => this.platform.notify('Erreur de recherche', 'alert'),
+    });
   }
 }

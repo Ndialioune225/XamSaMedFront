@@ -37,6 +37,54 @@ export class PublicHealthService {
       catchError(() => of([])),
     );
   }
+
+  /** GET /public-health/reports — liste des rapports générés. */
+  reports(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/public-health/reports`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** POST /public-health/reports/generate — générer un nouveau rapport. */
+  generateReport(period: string, type: string): Observable<any> {
+    return this.http.post<{ data: any }>(`${this.base}/public-health/reports/generate`, { period, type }).pipe(
+      map(r => r.data ?? {}),
+      catchError(() => of(null)),
+    );
+  }
+
+  /** GET /public-health/dashboard — indicateurs du tableau de bord. */
+  dashboard(): Observable<any> {
+    return this.http.get<{ data: any }>(`${this.base}/public-health/dashboard`).pipe(
+      map(r => r.data ?? {}),
+      catchError(() => of({})),
+    );
+  }
+
+  /** GET /public-health/alerts — alertes nationales. */
+  alerts(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/public-health/alerts`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** GET /public-health/trends — tendances. */
+  trends(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/public-health/trends`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** GET /public-health/top-zones — top zones en tension. */
+  topZones(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/public-health/top-zones`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
 }
 
 function toTension(t: ApiTension): Tension {

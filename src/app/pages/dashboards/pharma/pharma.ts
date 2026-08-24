@@ -33,6 +33,11 @@ export class PharmaDash {
 
   readonly addRefModal = signal(false);
   readonly restockModal = signal<StockRow | null>(null);
+  readonly sellModal = signal<StockRow | null>(null);
+  readonly adjustModal = signal<StockRow | null>(null);
+  
+  // Historique (mock)
+  readonly history = signal<any[]>([]);
 
   readonly crit = computed(() => this.stock().filter(s => s.s === 'crit' || s.s === 'out'));
   readonly alerts = computed(() => this.stock().filter(s => s.s !== 'ok'));
@@ -53,6 +58,11 @@ export class PharmaDash {
   reload(): void {
     this.pharmacy.stock().subscribe({ next: s => this.stock.set(s), error: () => { /* ignore */ } });
     this.pharmacy.demandes().subscribe({ next: d => this.demandes.set(d), error: () => { /* ignore */ } });
+    
+    // Charger l'historique mocké
+    if ((this.pharmacy as any).stockMovements) {
+      (this.pharmacy as any).stockMovements().subscribe({ next: (h: any) => this.history.set(h) });
+    }
   }
 
   pct(s: StockRow): number {
@@ -96,5 +106,47 @@ export class PharmaDash {
     // Dans une version complète, on appellerait l'API ici pour créer la référence.
     this.platform.notify(`${name} a été ajouté au stock`, 'ok');
     this.addRefModal.set(false);
+  }
+
+  // --- Vente ---
+  sell(s: StockRow): void { this.sellModal.set(s); }
+  submitSell(qtyInput: string): void {
+    const s = this.sellModal();
+    if (!s) return;
+    const qty = parseInt(qtyInput, 10);
+    if (isNaN(qty) || qty <= 0 || qty > s.q) {
+      this.platform.notify('Quantité invalide', 'alert');
+      return;
+    }
+    const target = s.q - qty + s.reserved;
+    this.pharmacy.restock(s.stockId, target).subscribe({
+      next: () => { 
+        this.platform.notify(`Vente de ${qty} unité(s) enregistrée`, 'ok'); 
+        this.sellModal.set(null);
+        this.reload(); 
+      }
+    });
+  }
+
+  // --- Ajustement ---
+  adjust(s: StockRow): void { this.adjustModal.set(s); }
+  submitAdjust(qtyInput: string, motif: string): void {
+    const s = this.adjustModal();
+    if (!s) return;
+    const diff = parseInt(qtyInput, 10);
+    if (isNaN(diff)) return;
+    const target = s.q + diff + s.reserved;
+    this.pharmacy.restock(s.stockId, Math.max(0, target)).subscribe({
+      next: () => { 
+        this.platform.notify(`Ajustement enregistré (${diff}) - Motif: ${motif}`, 'info'); 
+        this.adjustModal.set(null);
+        this.reload(); 
+      }
+    });
+  }
+
+  // --- Alerte Distributeur ---
+  alertDistrib(s: StockRow): void {
+    this.platform.notify(`Alerte envoyée au distributeur pour ${s.name}`, 'ok');
   }
 }

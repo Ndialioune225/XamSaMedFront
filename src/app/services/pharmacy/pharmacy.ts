@@ -42,6 +42,55 @@ export class PharmacyService {
   orientDemande(id: number, toStructureId: number): Observable<unknown> {
     return this.http.post(`${this.base}/pharmacy/demandes/${id}/orient`, { to_structure_id: toStructureId });
   }
+
+  /** GET /pharmacy/stock/{stock}/movements — historique réel des mouvements. */
+  stockMovements(stockId: number): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/pharmacy/stock/${stockId}/movements`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** GET /pharmacy/alerts — alertes de seuil. */
+  alerts(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/pharmacy/alerts`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** GET /pharmacy/dashboard — indicateurs tableau de bord. */
+  dashboard(): Observable<any> {
+    return this.http.get<{ data: any }>(`${this.base}/pharmacy/dashboard`).pipe(
+      map(r => r.data ?? {}),
+      catchError(() => of({})),
+    );
+  }
+
+  /** POST /pharmacy/stock/{stock}/external-sale — vente externe (PHA-010). */
+  externalSale(stockId: number, qty: number, note: string): Observable<unknown> {
+    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/external-sale`, { qty, note });
+  }
+
+  /** POST /pharmacy/stock/{stock}/inventory — ajustement d'inventaire (PHA-011). */
+  inventoryAdjustment(stockId: number, newQty: number, reason: string): Observable<unknown> {
+    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/inventory`, { new_qty: newQty, reason });
+  }
+
+  /** POST /pharmacy/stock — ajouter un nouveau stock. */
+  addStock(medicineId: number, quantity: number, threshold: number): Observable<unknown> {
+    return this.http.post(`${this.base}/pharmacy/stock`, { medicine_id: medicineId, quantity, threshold });
+  }
+
+  /** PUT /pharmacy/stock/{stock} — modifier un stock existant. */
+  updateStock(stockId: number, data: { quantity?: number; threshold?: number }): Observable<unknown> {
+    return this.http.put(`${this.base}/pharmacy/stock/${stockId}`, data);
+  }
+
+  /** DELETE /pharmacy/stock/{stock} — supprimer un stock. */
+  deleteStock(stockId: number): Observable<unknown> {
+    return this.http.delete(`${this.base}/pharmacy/stock/${stockId}`);
+  }
 }
 
 function toStockState(status: string): StockState {

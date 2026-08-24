@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Icon } from '../icon/icon';
 
-/* ---------------- Logo NOVAmedacces ---------------- */
+/* ---------------- Logo XamSaMed ---------------- */
 @Component({
   selector: 'nv-logo',
   changeDetection: ChangeDetectionStrategy.OnPush,

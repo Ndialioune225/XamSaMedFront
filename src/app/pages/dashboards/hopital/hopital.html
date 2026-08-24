@@ -72,6 +72,42 @@
         </div>
       }
 
+      @case ('history') {
+        <div>
+          <pf-page-head title="Historique des alertes" sub="Retrouvez toutes les alertes internes (actives et résolues)."/>
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>ID</th><th>Médicament</th><th>Service</th><th>Reste</th><th>Signalée</th><th>Statut</th></tr></thead>
+              <tbody>
+                @for (a of alertes(); track a.id) {
+                  <tr>
+                    <td><strong>{{ a.id }}</strong></td>
+                    <td>{{ a.med }}</td>
+                    <td>{{ a.service }}</td>
+                    <td><strong style="color:var(--blue)">{{ a.reste }}</strong></td>
+                    <td class="muted">{{ a.quand }}</td>
+                    <td><span class="chip chip-red">Active</span></td>
+                  </tr>
+                }
+                @for (h of alertHistory(); track h.id) {
+                  <tr>
+                    <td><strong>{{ h.id }}</strong></td>
+                    <td>{{ h.med }}</td>
+                    <td>{{ h.service }}</td>
+                    <td><strong style="color:var(--blue)">{{ h.reste }}</strong></td>
+                    <td class="muted">{{ h.quand }}</td>
+                    <td><span class="chip chip-green">Résolue</span></td>
+                  </tr>
+                }
+                @if (alertes().length === 0 && alertHistory().length === 0) {
+                  <tr><td colspan="6" class="muted" style="text-align:center;padding:16px 0">Aucun historique d'alerte.</td></tr>
+                }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
+
       @case ('res') {
         <div>
           <pf-page-head title="Réseau de partenaires" sub="Établissez des connexions avec pharmacies et distributeurs.">

@@ -1,5 +1,5 @@
 /* ============================================================
-   NOVAmedacces — Types & interfaces du domaine
+   XamSaMed — Types & interfaces du domaine
    (extraits de mock-data.ts pour centraliser les contrats)
    ============================================================ */
 
@@ -25,7 +25,10 @@ export interface Feature { role: string; icon: string; color: 'green' | 'blue'; 
 
 /* ---- Vues mappées depuis l'API (consommées par les dashboards) ---- */
 export interface AvailabilityRow { structureId: number; pharmacy: string; city: string; phone: string; dist: string; s: DispoState; label: string; }
-export interface ResaRow { medName: string; pharmacyName: string; statut: string; quand: string; s: DispoState; }
+export interface ResaRow { orderId: number; medName: string; pharmacyName: string; statut: string; quand: string; s: DispoState; }
 export interface StockRow { stockId: number; medId: number; name: string; sub: string; q: number; reserved: number; seuil: number; s: StockState; }
 export interface DemandeRow { id: number; medName: string; from: string; type: string; qty: number; urgency: string; status: string; quand: string; }
 export interface CritMedRow { medId: number; name: string; available: number; s: StockState; }
+
+export type DeliveryStatus = 'Planifiée' | 'En transit' | 'Livrée' | 'Annulée';
+export interface DeliveryRow { id: string; zone: string; med: string; qty: number; date: string; status: DeliveryStatus; }

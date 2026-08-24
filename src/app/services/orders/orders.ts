@@ -23,6 +23,11 @@ export class OrderService {
   create(medicineId: number, structureId: number, qty = 1): Observable<unknown> {
     return this.http.post(`${this.base}/orders`, { medicine_id: medicineId, structure_id: structureId, qty });
   }
+
+  /** DELETE /orders/{id} → annule une réservation. */
+  cancel(orderId: number): Observable<unknown> {
+    return this.http.delete(`${this.base}/orders/${orderId}`);
+  }
 }
 
 const STATUS: Record<string, { statut: string; s: DispoState }> = {
@@ -35,6 +40,7 @@ const STATUS: Record<string, { statut: string; s: DispoState }> = {
 function toResa(o: ApiOrder): ResaRow {
   const m = STATUS[o.status] ?? { statut: o.status, s: 'low' as DispoState };
   return {
+    orderId: o.id,
     medName: o.medicine ?? '—',
     pharmacyName: o.pharmacy ?? '—',
     statut: m.statut,

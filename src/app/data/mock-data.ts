@@ -1,5 +1,5 @@
 /* ============================================================
-   NOVAmedacces — Données mock (démo réaliste)
+   XamSaMed — Données mock (démo réaliste)
    Porté depuis le prototype Claude Design (data.jsx)
    Les types/interfaces vivent dans ../interfaces/models.
    ============================================================ */
@@ -123,17 +123,20 @@ export const NAV: Record<RoleId, NavItem[]> = {
     { id: 'stock', label: 'Gestion de stock', icon: 'box' },
     { id: 'alert', label: 'Alertes de seuil', icon: 'alert', badge: 2 },
     { id: 'dem', label: 'Demandes ciblées', icon: 'mail', badge: 2 },
+    { id: 'history', label: 'Historique', icon: 'clock' },
     { id: 'profil', label: 'Officine', icon: 'pill' },
   ],
   distrib: [
     { id: 'home', label: 'Tableau de bord', icon: 'grid' },
     { id: 'reg', label: 'Demandes régionales', icon: 'layers', badge: 4 },
+    { id: 'livraisons', label: 'Livraisons', icon: 'truck' },
     { id: 'zones', label: 'Zones critiques', icon: 'pin' },
     { id: 'prev', label: 'Prévisions', icon: 'trend' },
   ],
   hopital: [
     { id: 'home', label: 'Tableau de bord', icon: 'grid' },
     { id: 'alert', label: 'Alertes internes', icon: 'alert', badge: 3 },
+    { id: 'history', label: 'Historique', icon: 'clock' },
     { id: 'res', label: 'Réseau partenaires', icon: 'link' },
     { id: 'crit', label: 'Médicaments critiques', icon: 'shield' },
   ],

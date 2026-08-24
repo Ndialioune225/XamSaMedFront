@@ -6,7 +6,7 @@ export interface Toast { id: number; msg: string; kind: NotifKind; }
 const STORAGE_KEY = 'nova-role';
 
 /* ============================================================
-   NOVAmedacces — État plateforme (rôle courant) + bus de toasts
+   XamSaMed — État plateforme (rôle courant) + bus de toasts
    ============================================================ */
 @Injectable({ providedIn: 'root' })
 export class PlatformState {

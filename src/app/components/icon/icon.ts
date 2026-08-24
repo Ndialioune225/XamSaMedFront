@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /* ============================================================
-   NOVAmedacces — Icônes (line icons géométriques simples)
+   XamSaMed — Icônes (line icons géométriques simples)
    Couleur héritée via currentColor — émeraude par défaut dans l'UI
    Porté depuis icons.jsx
    ============================================================ */

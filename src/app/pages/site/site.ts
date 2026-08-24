@@ -8,7 +8,7 @@ import { Logo } from '../../components/logo/logo';
 import { FEATURES } from '../../data/mock-data';
 
 /* ============================================================
-   NOVAmedacces — Site vitrine (public)
+   XamSaMed — Site vitrine (public)
    Accueil · Problème · Fonctionnalités · Comment ça marche · Technologies
    Sécurité · Témoignages · À propos · FAQ · Contact · Footer
    ============================================================ */
@@ -39,7 +39,7 @@ export class SiteVitrine implements AfterViewInit, OnDestroy {
   newsMail = '';
 
   readonly navLinks: [string, string][] = [
-    ['Fonctionnalités', '#features'], ['Comment ça marche', '#how'], ['Technologie', '#tech'],
+    ['Fonctionnalités', '#features'], ['Comment ça marche ?', '#how'], //['Technologie', '#tech'],
     ['À propos', '#about'], ['FAQ', '#faq'], ['Contact', '#contact'],
   ];
   readonly heroStats: [string, string][] = [['1 200+', 'Officines connectées'], ['48 s', "Délai moyen d'alerte"], ['32', 'Zones suivies en temps réel']];
@@ -85,14 +85,14 @@ export class SiteVitrine implements AfterViewInit, OnDestroy {
     ['Confiance', 'Sécurité et confidentialité comme principe fondateur.'],
   ];
   readonly faqs: [string, string][] = [
-    ['NOVAmedacces est-il gratuit pour les patients ?', 'Oui. La recherche de médicaments, la localisation des officines et la réservation sont gratuites pour les patients et leurs accompagnants.'],
+    ['XamSaMed est-il gratuit pour les patients ?', 'Oui. La recherche de médicaments, la localisation des officines et la réservation sont gratuites pour les patients et leurs accompagnants.'],
     ['Mes stocks sont-ils visibles par tout le monde ?', 'Non. Le partage est partiel : les pharmaciens reçoivent des demandes ciblées sans exposer l\'intégralité de leur stock au public ou aux concurrents.'],
     ['Comment fonctionne l\'accès par QR code ?', 'Chaque produit ou officine peut disposer d\'un QR code. Scanné depuis un smartphone, il ouvre directement la fiche de disponibilité — idéal pour un accès rapide.'],
     ['La plateforme fonctionne-t-elle en zone rurale ?', 'Oui. L\'interface est volontairement légère et simple, conçue pour fonctionner même avec une connectivité limitée.'],
-    ['Peut-on connecter nos systèmes existants ?', 'Oui. Une API permet de connecter NOVAmedacces aux structures publiques (PNA, PRA, IB) et aux systèmes hospitaliers.'],
+    ['Peut-on connecter nos systèmes existants ?', 'Oui. Une API permet de connecter XamSaMed aux structures publiques (PNA, PRA, IB) et aux systèmes hospitaliers.'],
   ];
   readonly contactList: [string, string, string][] = [
-    ['mail', 'Email', 'contact@novamedacces.sn'],
+    ['mail', 'Email', 'contact@xamsamed.sn'],
     ['phoneCall', 'Téléphone', '+221 33 800 00 00'],
     ['pin', 'Adresse', 'Dakar, Sénégal — Plateau'],
   ];

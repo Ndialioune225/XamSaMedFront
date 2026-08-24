@@ -5,6 +5,11 @@
 export type BackendRole =
   | 'patient' | 'pharmacy_user' | 'hospital_user' | 'distributor_user' | 'admin';
 
+export interface DistributorMeta {
+  type: 'PNA' | 'PRA' | 'PRIVATE';
+  region?: string;
+}
+
 export interface ApiUser {
   id: number;
   name: string;
@@ -12,7 +17,7 @@ export interface ApiUser {
   phone: string | null;
   role: BackendRole;
   structure_id: number | null;
-  profile_meta?: Record<string, unknown> | null;
+  profile_meta?: DistributorMeta | Record<string, unknown> | null;
   email_verified_at?: string | null;
   created_at?: string;
   updated_at?: string;

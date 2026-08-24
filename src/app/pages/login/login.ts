@@ -7,6 +7,8 @@ import { AuthService } from '../../services/auth/auth';
 import { ROLES, roleById } from '../../data/mock-data';
 import { RoleId } from '../../interfaces/models';
 
+
+
 /* ---------------- Login / authentification (Sanctum) ---------------- */
 @Component({
   selector: 'app-login',
@@ -15,6 +17,8 @@ import { RoleId } from '../../interfaces/models';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
+
+
 export class LoginScreen {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);

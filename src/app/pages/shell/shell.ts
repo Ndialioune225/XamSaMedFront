@@ -27,10 +27,8 @@ export class AppShell {
   private readonly auth = inject(AuthService);
 
   readonly role = this.platform.role;
-  readonly roles = ROLES;
   readonly collapsed = signal(false);
   readonly notifOpen = signal(false);
-  readonly roleMenu = signal(false);
   readonly sec = signal<string>('search');
 
   readonly current = computed(() => { const r = this.role(); return r ? roleById(r) : null; });
@@ -46,16 +44,8 @@ export class AppShell {
   shortLabel(label: string): string { return label.split(' / ')[0]; }
   select(id: string): void { this.sec.set(id); this.notifOpen.set(false); }
   toggleCollapse(): void { this.collapsed.update(c => !c); }
-  toggleNotif(e: Event): void { e.stopPropagation(); this.notifOpen.update(o => !o); this.roleMenu.set(false); }
-  toggleRoleMenu(e: Event): void { e.stopPropagation(); this.roleMenu.update(m => !m); this.notifOpen.set(false); }
-  closeMenus(): void { if (this.notifOpen()) this.notifOpen.set(false); if (this.roleMenu()) this.roleMenu.set(false); }
-
-  switchRole(id: RoleId): void {
-    this.platform.setRole(id);
-    this.sec.set(NAV[id][0].id);
-    this.roleMenu.set(false);
-    this.notifOpen.set(false);
-  }
+  toggleNotif(e: Event): void { e.stopPropagation(); this.notifOpen.update(o => !o); }
+  closeMenus(): void { if (this.notifOpen()) this.notifOpen.set(false); }
   exit(): void {
     // Révoque le token côté serveur ; le nettoyage local (rôle + token) est
     // assuré par AuthService.logout(). Navigation immédiate vers le site public.

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -6,6 +6,7 @@ import { Stat } from '../../../components/stat/stat';
 import { Bar } from '../../../components/bar/bar';
 import { Tag } from '../../../components/tag/tag';
 import { ZoneMap } from '../../../components/zone-map/zone-map';
+import { PlatformState } from '../../../services/platform/platform';
 import { PublicHealthService } from '../../../services/public-health/public-health';
 import { ApiOverview } from '../../../interfaces/api';
 import { Tension, ZoneInfo } from '../../../interfaces/models';
@@ -24,8 +25,9 @@ type BarTone = 'green' | 'amber' | 'red' | 'blue';
 })
 export class SanteDash {
   private readonly ph = inject(PublicHealthService);
+  private readonly platform = inject(PlatformState);
 
-  readonly section = input.required<string>();
+  readonly section = model.required<string>();
   readonly sel = signal<string | null>(null);
   readonly tension = signal<Tension[]>([]);
   readonly zones = signal<ZoneInfo[]>([]);
@@ -38,11 +40,11 @@ export class SanteDash {
   readonly tensionMid = computed(() => this.tension().filter(t => t.pct > 40).length);
   readonly sortedZones = computed(() => [...this.zones()].sort((a, b) => b.ruptures - a.ruptures));
 
-  readonly reports: readonly [string, string, string, string][] = [
-    ['Semaine 23 · 2026', 'Rapport hebdomadaire', 'Prêt', 'ok'],
-    ['Mai 2026', 'Rapport mensuel régional', 'Prêt', 'ok'],
-    ['T2 · 2026', 'Bilan trimestriel', 'En cours', 'low'],
-  ];
+  readonly reports = signal<any[]>([
+    { period: 'Semaine 23 · 2026', type: 'Synthèse nationale', status: 'Prêt', s: 'ok' },
+    { period: 'Mai 2026', type: 'Rapport régional détaillé', status: 'Prêt', s: 'ok' },
+    { period: 'T2 · 2026', type: 'Bilan trimestriel', status: 'En cours', s: 'low' },
+  ]);
   readonly keyStats: readonly [string, string, string][] = [
     ['Délais moyens de réappro.', '2,8 jours', 'trend'],
     ['Médicaments en tension', '5 références', 'pill'],
@@ -61,10 +63,15 @@ export class SanteDash {
   tlabel(pct: number): string { return pct > 70 ? 'Critique' : pct > 40 ? 'Élevée' : 'Modérée'; }
 
   generateReport(): void { this.generateModal.set(true); }
-  exportReport(): void { /* Logic for export */ }
+  exportReport(reportType: string = 'national'): void { 
+    this.platform.notify(`Export PDF généré pour le rapport ${reportType}`, 'ok'); 
+  }
 
   submitGenerate(period: string, type: string): void {
-    // Appel API simulé
+    // ADM-006 & ADM-007: Ajout au signal d'historique (ADM-009)
+    const newReport = { period, type, status: 'Prêt', s: 'ok' };
+    this.reports.update(list => [newReport, ...list]);
+    this.platform.notify(`Rapport '${type}' pour '${period}' généré avec succès`, 'ok');
     this.generateModal.set(false);
   }
 }

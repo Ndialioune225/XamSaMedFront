@@ -1,7 +1,9 @@
     @switch (section()) {
       @case ('home') {
         <div>
-          <pf-page-head title="Tableau de bord distributeur" sub="PNA — Pharmacie Nationale d'Approvisionnement"/>
+          <pf-page-head title="Tableau de bord distributeur" [sub]="distributorContext()">
+            <button actions class="btn btn-outline btn-sm" (click)="section.set('livraisons')"><nv-icon name="truck" [size]="16"/> Voir livraisons</button>
+          </pf-page-head>
           <div class="pf-statgrid">
             <pf-stat icon="layers" tone="blue" label="Demandes régionales" [value]="demandes().length"/>
             <pf-stat icon="alert" tone="red" label="Zones critiques" [value]="critZones()"/>
@@ -120,6 +122,54 @@
           </pf-card>
         </div>
       }
+
+      @case ('livraisons') {
+        <div>
+          <pf-page-head title="Suivi des livraisons" sub="Gérez le cycle de vie de vos expéditions.">
+            <button actions class="btn btn-green btn-sm" (click)="planLivraison()"><nv-icon name="plus" [size]="16"/> Nouvelle livraison</button>
+          </pf-page-head>
+          
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button class="btn btn-sm" [class.btn-blue]="filterStatus() === 'Toutes'" [class.btn-outline]="filterStatus() !== 'Toutes'" (click)="filterStatus.set('Toutes')">Toutes</button>
+            <button class="btn btn-sm" [class.btn-blue]="filterStatus() === 'Planifiée'" [class.btn-outline]="filterStatus() !== 'Planifiée'" (click)="filterStatus.set('Planifiée')">Planifiées</button>
+            <button class="btn btn-sm" [class.btn-blue]="filterStatus() === 'En transit'" [class.btn-outline]="filterStatus() !== 'En transit'" (click)="filterStatus.set('En transit')">En transit</button>
+            <button class="btn btn-sm" [class.btn-blue]="filterStatus() === 'Livrée'" [class.btn-outline]="filterStatus() !== 'Livrée'" (click)="filterStatus.set('Livrée')">Livrées</button>
+          </div>
+
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>ID</th><th>Zone</th><th>Médicament</th><th>Quantité</th><th>Date Prévue</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody>
+                @for (d of filteredDeliveries(); track d.id) {
+                  <tr>
+                    <td><strong>{{ d.id }}</strong></td>
+                    <td>{{ d.zone }}</td>
+                    <td>{{ d.med }}</td>
+                    <td><strong style="font-family:'Montserrat';color:var(--blue)">{{ d.qty }}</strong></td>
+                    <td class="muted">{{ d.date }}</td>
+                    <td>
+                      <pf-tag [s]="d.status === 'Planifiée' ? 'blue' : d.status === 'En transit' ? 'amber' : d.status === 'Livrée' ? 'green' : 'crit'">{{ d.status }}</pf-tag>
+                    </td>
+                    <td class="pf-li-act" style="justify-content:flex-start; gap:6px;">
+                      @if (d.status === 'Planifiée') {
+                        <button class="btn btn-outline btn-sm" (click)="editLivraisonModal.set(d)">Modifier</button>
+                        <button class="btn btn-green btn-sm" (click)="startTransit(d.id)">Démarrer</button>
+                        <button class="btn btn-ghost btn-sm" style="color:var(--red)" (click)="cancelDelivery(d.id)">Annuler</button>
+                      }
+                      @if (d.status === 'En transit') {
+                        <button class="btn btn-green btn-sm" (click)="confirmDelivery(d.id)">Confirmer</button>
+                      }
+                    </td>
+                  </tr>
+                }
+                @if (filteredDeliveries().length === 0) {
+                  <tr><td colspan="7" class="muted" style="text-align:center;padding:16px 0">Aucune livraison trouvée.</td></tr>
+                }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
     }
 
     <!-- Modals -->
@@ -146,6 +196,31 @@
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="planModal.set(false)">Annuler</button>
             <button type="submit" class="btn btn-green btn-sm">Planifier</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (editLivraisonModal(); as l) {
+      <div class="pf-modal-overlay" (click)="editLivraisonModal.set(null)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitEditLivraison(eQty.value, eDate.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Modifier Livraison {{ l.id }}</h3>
+            <button type="button" class="pf-modal-close" (click)="editLivraisonModal.set(null)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+              <span class="pf-liic blue"><nv-icon name="truck" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ l.med }}</strong><span>Vers : {{ l.zone }}</span></div>
+            </div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Quantité (unités) *</label><input #eQty required type="number" min="1" [value]="l.qty"/></div>
+              <div class="s-field" style="margin:0"><label>Date prévue *</label><input #eDate required type="date" [value]="l.date"/></div>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="editLivraisonModal.set(null)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Sauvegarder</button>
           </div>
         </form>
       </div>

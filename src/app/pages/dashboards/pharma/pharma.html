@@ -5,6 +5,7 @@
             <ng-container actions>
               <button class="btn btn-outline btn-sm" (click)="section.set('stock')"><nv-icon name="box" [size]="16"/> Gérer le stock</button>
               <button class="btn btn-green btn-sm" (click)="section.set('dem')"><nv-icon name="mail" [size]="16"/> Demandes</button>
+              <button class="btn btn-ghost btn-sm" (click)="section.set('history')"><nv-icon name="clock" [size]="16"/> Historique</button>
             </ng-container>
           </pf-page-head>
           <div class="pf-statgrid">
@@ -60,9 +61,12 @@
                     <td class="muted">{{ s.seuil }}</td>
                     <td style="min-width:110px"><pf-bar [pct]="pct(s)" [tone]="barTone(s)"/></td>
                     <td><pf-tag [s]="s.s">{{ stateLabel(s.s) }}</pf-tag></td>
-                    <td>
-                      @if (s.s !== 'ok') { <button class="btn btn-green btn-sm" (click)="restock(s)">Réapprov.</button> }
-                      @else { <span class="muted" style="font-size:12px">—</span> }
+                    <td class="pf-li-act" style="justify-content: flex-start; gap: 6px;">
+                      @if (s.q > 0) {
+                        <button class="btn btn-outline btn-sm" (click)="sell(s)" title="Vente hors plateforme">Vendre</button>
+                      }
+                      <button class="btn btn-outline btn-sm" (click)="adjust(s)" title="Ajustement inventaire">Ajuster</button>
+                      <button class="btn btn-green btn-sm" (click)="restock(s)" title="Enregistrer réapprovisionnement">Réappro.</button>
                     </td>
                   </tr>
                 }
@@ -87,9 +91,10 @@
               <div class="pf-li">
                 <span class="pf-liic {{ s.s === 'low' ? 'amber' : 'red' }}"><nv-icon name="alert" [size]="18"/></span>
                 <div class="pf-libody"><strong>{{ s.name }}</strong><span>{{ s.q }} unité(s) restantes · seuil fixé à {{ s.seuil }}</span></div>
-                <div class="pf-li-act">
+                <div class="pf-li-act" style="gap:8px">
                   <pf-tag [s]="s.s">{{ alertLabel(s.s) }}</pf-tag>
-                  <button class="btn btn-green btn-sm" (click)="restock(s)">Réapprovisionner</button>
+                  <button class="btn btn-outline btn-sm" (click)="alertDistrib(s)">Alerter Distributeur</button>
+                  <button class="btn btn-green btn-sm" (click)="restock(s)">Réapprov.</button>
                 </div>
               </div>
             }
@@ -107,6 +112,32 @@
 
       @case ('profil') {
         <app-simple-profile role="pharma" title="Mon officine" name="Pharmacie Centrale" sub="Officine privée · Dakar Plateau" [fields]="profilFields"/>
+      }
+
+      @case ('history') {
+        <div>
+          <pf-page-head title="Historique des mouvements" sub="Traçabilité complète de l'inventaire."/>
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>Date</th><th>Type</th><th>Médicament</th><th>Quantité</th><th>Stock Résultant</th><th>Utilisateur</th></tr></thead>
+              <tbody>
+                @for (h of history(); track h.id) {
+                  <tr>
+                    <td class="muted">{{ h.date }}</td>
+                    <td>
+                      <pf-tag [s]="h.type === 'Vente' || h.type === 'Réservation' ? 'amber' : h.type === 'Réapprovisionnement' ? 'green' : 'blue'">{{ h.type }}</pf-tag>
+                    </td>
+                    <td><strong>{{ h.medName }}</strong></td>
+                    <td><span [style.color]="h.qty > 0 ? 'var(--green)' : 'var(--red)'">{{ h.qty > 0 ? '+' : '' }}{{ h.qty }}</span></td>
+                    <td>{{ h.newStock }}</td>
+                    <td class="muted">{{ h.user }}</td>
+                  </tr>
+                }
+                @if (history().length === 0) { <tr><td colspan="6" class="muted" style="padding:18px 0;text-align:center">Aucun mouvement récent.</td></tr> }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
       }
     }
 
@@ -151,6 +182,60 @@
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="restockModal.set(null)">Annuler</button>
             <button type="submit" class="btn btn-green btn-sm">Valider</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (sellModal(); as s) {
+      <div class="pf-modal-overlay" (click)="sellModal.set(null)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitSell(vQty.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Vente hors plateforme</h3>
+            <button type="button" class="pf-modal-close" (click)="sellModal.set(null)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+              <span class="pf-liic blue"><nv-icon name="box" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ s.name }}</strong><span>Actuellement en stock : {{ s.q }} u.</span></div>
+            </div>
+            <div class="s-field" style="margin:0"><label>Quantité vendue *</label><input #vQty required type="number" min="1" [max]="s.q" value="1" /></div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="sellModal.set(null)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Enregistrer Vente</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (adjustModal(); as s) {
+      <div class="pf-modal-overlay" (click)="adjustModal.set(null)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitAdjust(aQty.value, aMotif.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Ajustement inventaire</h3>
+            <button type="button" class="pf-modal-close" (click)="adjustModal.set(null)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+              <span class="pf-liic blue"><nv-icon name="box" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ s.name }}</strong><span>Actuellement en stock : {{ s.q }} u.</span></div>
+            </div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Écart (ex: -5 ou +2) *</label><input #aQty required type="number" placeholder="-1" /></div>
+              <div class="s-field" style="margin:0"><label>Motif *</label>
+                <select #aMotif required>
+                  <option value="Périmé">Produit périmé</option>
+                  <option value="Casse">Casse / Perte</option>
+                  <option value="Ecart Inventaire">Erreur d'inventaire</option>
+                  <option value="Autre">Autre</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="adjustModal.set(null)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Ajuster</button>
           </div>
         </form>
       </div>
