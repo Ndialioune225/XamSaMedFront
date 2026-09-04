@@ -36,10 +36,15 @@ export class AppShell {
   readonly sec = signal<string>('search');
   readonly globalQuery = signal('');
   readonly globalResults = signal<GlobalSearchResult[]>([]);
+  readonly dismissedNotifications = signal<Set<string>>(new Set());
 
   readonly current = computed(() => { const r = this.role(); return r ? roleById(r) : null; });
   readonly nav = computed(() => { const r = this.role(); return r ? NAV[r] : []; });
-  readonly notifs = computed(() => { const r = this.role(); return r ? NOTIFS[r] : []; });
+  readonly notifs = computed(() => {
+    const r = this.role();
+    const dismissed = this.dismissedNotifications();
+    return r ? NOTIFS[r].filter(n => !dismissed.has(`${r}:${n.t}:${n.d}`)) : [];
+  });
 
   constructor() {
     const r = this.platform.role();
@@ -49,6 +54,25 @@ export class AppShell {
 
   shortLabel(label: string): string { return label.split(' / ')[0]; }
   select(id: string): void { this.sec.set(id); this.notifOpen.set(false); }
+  openNotification(index: number): void {
+    const role = this.role();
+    const target: Record<RoleId, string[]> = {
+      patient: ['resa', 'search'],
+      pharma: ['alert', 'dem', 'stock'],
+      distrib: ['zones', 'reg'],
+      hopital: ['alert', 'alert'],
+      sante: ['zones', 'rapport'],
+    };
+    const notification = this.notifs()[index];
+    if (role && notification) {
+      this.dismissedNotifications.update(items => {
+        const next = new Set(items);
+        next.add(`${role}:${notification.t}:${notification.d}`);
+        return next;
+      });
+      this.select(target[role][index] ?? target[role][0]);
+    }
+  }
   searchGlobal(event: Event): void {
     const query = (event.target as HTMLInputElement).value;
     this.globalQuery.set(query);

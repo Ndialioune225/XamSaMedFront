@@ -65,12 +65,14 @@ export class HospitalService {
 
   /** POST /hospital/partners — ajouter un partenaire. */
   addPartner(structureId: number, type: string): Observable<unknown> {
-    return this.http.post(`${this.base}/hospital/partners`, { structure_id: structureId, type });
+    return this.http.post(`${this.base}/hospital/partners`, { partner_id: structureId, partner_type: type, identifier: String(structureId) });
   }
 
   /** GET /hospital/search-partners?q= — rechercher un partenaire. */
-  searchPartners(q: string): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/hospital/search-partners`, { params: { q } }).pipe(
+  searchPartners(q: string, type?: string): Observable<any[]> {
+    const params: Record<string, string> = { q };
+    if (type) params['type'] = type;
+    return this.http.get<{ data: any[] }>(`${this.base}/hospital/search-partners`, { params }).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );

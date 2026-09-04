@@ -5,7 +5,7 @@
           <div class="pf-statgrid">
             <pf-stat icon="alert" tone="red" label="Alertes internes actives" [value]="alertes().length"/>
             <pf-stat icon="shield" tone="amber" label="Médicaments critiques suivis" [value]="critMeds().length"/>
-            <pf-stat icon="link" tone="green" label="Partenaires connectés" value="7" delta="2 nouveaux" [deltaUp]="true"/>
+            <pf-stat icon="link" tone="green" label="Partenaires connectés" [value]="activePartnerCount()"/>
             <pf-stat icon="clock" tone="blue" label="Délai moyen de réponse" value="42 min"/>
           </div>
           <div class="pf-cols">
@@ -21,13 +21,14 @@
               @if (alertes().length === 0) { <div class="muted" style="padding:14px 0">Aucune alerte interne active.</div> }
             </pf-card>
             <pf-card title="Réseau partenaires" sub="Pharmacies & distributeurs reliés">
-              @for (p of partners; track p[0]) {
+              @for (p of realPartners(); track p.id) {
                 <div class="pf-li">
-                  <span class="pf-liic {{ p[2] === 'green' ? 'green' : '' }}"><nv-icon [name]="p[2] === 'green' ? 'pill' : 'truck'" [size]="18"/></span>
-                  <div class="pf-libody"><strong>{{ p[0] }}</strong><span>{{ p[1] }}</span></div>
-                  <span class="chip chip-green"><span class="dot" style="background:var(--green)"></span> Connecté</span>
+                  <span class="pf-liic {{ p.type === 'pharmacy' ? 'green' : '' }}"><nv-icon [name]="p.type === 'pharmacy' ? 'pill' : 'truck'" [size]="18"/></span>
+                  <div class="pf-libody"><strong>{{ p.partner }}</strong><span>{{ p.city }} · {{ p.type === 'pharmacy' ? 'Pharmacie' : 'Distributeur' }}</span></div>
+                  <span class="chip" [class.chip-green]="p.status === 'active'" [class.chip-amber]="p.status !== 'active'">{{ p.status === 'active' ? 'Connecté' : 'En attente' }}</span>
                 </div>
               }
+              @if (realPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucun partenaire enregistré.</div> }
             </pf-card>
           </div>
         </div>
@@ -115,28 +116,24 @@
           </pf-page-head>
           <div class="pf-half">
             <pf-card title="Pharmacies connectées">
-              @for (p of connectedPharma(); track p.id) {
+              @for (p of pharmacyPartners(); track p.id) {
                 <div class="pf-li">
                   <span class="pf-liic green"><nv-icon name="pill" [size]="18"/></span>
-                  <div class="pf-libody"><strong>{{ p.nom }}</strong><span>{{ p.ville }} · {{ p.horaires }}</span></div>
-                  <span class="chip chip-green">Actif</span>
+                  <div class="pf-libody"><strong>{{ p.partner }}</strong><span>{{ p.city }} · {{ p.phone }}</span></div>
+                  <span class="chip" [class.chip-green]="p.status === 'active'" [class.chip-amber]="p.status !== 'active'">{{ p.status === 'active' ? 'Actif' : 'En attente' }}</span>
                 </div>
               }
-              @if (connectedPharma().length === 0) { <div class="muted" style="padding:14px 0">Aucune pharmacie connectée.</div> }
+              @if (pharmacyPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucune pharmacie partenaire.</div> }
             </pf-card>
             <pf-card title="Distributeurs connectés">
-              @for (d of distributors; track d[0]) {
+              @for (d of distributorPartners(); track d.id) {
                 <div class="pf-li">
                   <span class="pf-liic"><nv-icon name="truck" [size]="18"/></span>
-                  <div class="pf-libody"><strong>{{ d[0] }}</strong><span>{{ d[1] }}</span></div>
-                  <span class="chip chip-green">Actif</span>
+                  <div class="pf-libody"><strong>{{ d.partner }}</strong><span>{{ d.city }} · Distributeur</span></div>
+                  <span class="chip" [class.chip-green]="d.status === 'active'" [class.chip-amber]="d.status !== 'active'">{{ d.status === 'active' ? 'Actif' : 'En attente' }}</span>
                 </div>
               }
-              <div class="pf-li">
-                <span class="pf-liic amber"><nv-icon name="truck" [size]="18"/></span>
-                <div class="pf-libody"><strong>PRA Régionale</strong><span>Demande de connexion en attente</span></div>
-                <button class="btn btn-green btn-sm">Accepter</button>
-              </div>
+              @if (distributorPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucun distributeur enregistré.</div> }
             </pf-card>
           </div>
         </div>

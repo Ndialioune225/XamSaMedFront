@@ -369,10 +369,10 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .pf-loginhint{margin-top:14px;font-size:12.5px;color:var(--gray-text)}
 
 /* ===================== APP SHELL ===================== */
-.pf-app{display:grid;grid-template-columns:264px 1fr;min-height:100vh;background:var(--gray-bg)}
-.pf-app.col{grid-template-columns:78px 1fr}
+.pf-app{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh;background:var(--gray-bg)}
+.pf-app.col{grid-template-columns:88px minmax(0,1fr)}
 .pf-side{background:linear-gradient(180deg,var(--blue) 0%,var(--blue-700) 100%);color:#fff;
-  display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden}
 .pf-sidetop{padding:6px 8px 16px}
 .pf-app.col .pf-sidetop .nv-logo span:last-child{display:none}
 .pf-rolepill{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
@@ -391,7 +391,14 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .pf-navitem.on .pf-navbadge{background:rgba(255,255,255,.25)}
 .pf-sidefoot{display:flex;flex-direction:column;gap:4px;border-top:1px solid rgba(255,255,255,.12);padding-top:10px;margin-top:10px}
 .pf-app.col .pf-navitem{justify-content:center;padding:11px 0}
-.pf-app.col .pf-rolepill{justify-content:center}
+.pf-app.col .pf-sidetop{display:flex;justify-content:center;padding:6px 0 18px}
+.pf-app.col .pf-sidetop .nv-logo{width:42px;overflow:hidden;justify-content:center}
+.pf-app.col .pf-sidetop .nv-logo>span:nth-child(2){display:none !important}
+.pf-app.col .pf-rolepill{justify-content:center;width:56px;height:56px;padding:0;margin:0 auto 18px}
+.pf-app.col .pf-rolepillic{width:38px;height:38px}
+.pf-app.col .pf-navitem{width:56px;height:48px;margin:0 auto;padding:0;border-radius:12px}
+.pf-app.col .pf-sidefoot{align-items:center}
+.pf-app.col .pf-sidefoot .pf-navitem{width:56px}
 
 .pf-main{display:flex;flex-direction:column;min-width:0}
 .pf-top{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);
@@ -409,7 +416,7 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .pf-notifpanel{position:absolute;top:52px;right:0;width:340px;padding:8px;z-index:40;box-shadow:var(--shadow-lg)}
 .pf-notifhead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
 .pf-notifhead strong{font-family:'Montserrat';color:var(--blue);font-size:15px}
-.pf-notifitem{display:flex;gap:11px;padding:11px 12px;border-radius:10px}
+.pf-notifitem{display:flex;gap:11px;width:100%;border:0;background:transparent;padding:11px 12px;border-radius:10px;text-align:left;cursor:pointer}
 .pf-notifitem:hover{background:var(--gray-bg)}
 .pf-notificon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none}
 .pf-notificon.ok{background:var(--green-soft);color:var(--green)}
@@ -566,9 +573,15 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
   .pf-cols,.pf-cols3,.pf-half,.pf-qr{grid-template-columns:1fr}
 }
 @media(max-width:860px){
-  .pf-app{grid-template-columns:72px 1fr}
-  .pf-side .nv-logo span:last-child,.pf-navitem span:not(.pf-navic):not(.pf-navbadge),.pf-rolepilltxt{display:none}
-  .pf-navitem{justify-content:center}
+  .pf-app{grid-template-columns:76px minmax(0,1fr)}
+  .pf-side .nv-logo>span:nth-child(2),.pf-navitem span:not(.pf-navic):not(.pf-navbadge),.pf-rolepilltxt{display:none !important}
+  .pf-side{padding:20px 10px}
+  .pf-sidetop{display:flex;justify-content:center;padding-left:0;padding-right:0}
+  .pf-sidetop .nv-logo{width:42px;overflow:hidden;justify-content:center}
+  .pf-rolepill{width:52px;height:52px;padding:0;justify-content:center;margin-left:auto;margin-right:auto}
+  .pf-navitem{justify-content:center;width:52px;height:46px;margin-left:auto;margin-right:auto;padding:0}
+  .pf-sidefoot{align-items:center}
+  .pf-sidefoot .pf-navitem{width:52px}
   .pf-rolesname{display:none}
 }
 @media(max-width:760px){

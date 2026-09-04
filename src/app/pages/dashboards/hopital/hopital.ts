@@ -6,8 +6,7 @@ import { Stat } from '../../../components/stat/stat';
 import { Tag } from '../../../components/tag/tag';
 import { PlatformState } from '../../../services/platform/platform';
 import { HospitalService } from '../../../services/hospital/hospital';
-import { StructureService } from '../../../services/structures/structures';
-import { AlerteHop, CritMedRow, Pharmacy } from '../../../interfaces/models';
+import { AlerteHop, CritMedRow } from '../../../interfaces/models';
 
 /* ============================================================
    HÔPITAL — alertes internes, réseau, médicaments critiques (API réelle)
@@ -22,12 +21,10 @@ import { AlerteHop, CritMedRow, Pharmacy } from '../../../interfaces/models';
 export class HopitalDash {
   private readonly platform = inject(PlatformState);
   private readonly hospital = inject(HospitalService);
-  private readonly structures = inject(StructureService);
 
   readonly section = model.required<string>();
   readonly alertes = signal<AlerteHop[]>([]);
   readonly critMeds = signal<CritMedRow[]>([]);
-  readonly connectedPharma = signal<Pharmacy[]>([]);
   readonly alertHistory = signal<any[]>([]);
 
   readonly signalModal = signal(false);
@@ -35,22 +32,14 @@ export class HopitalDash {
 
   readonly activeAlerts = computed(() => this.alertes().filter(a => a.niveau === 'crit' || a.niveau === 'haute'));
   readonly resolvedCount = computed(() => this.alertHistory().filter(a => a.resolved).length);
-
-  readonly partners: readonly [string, string, string][] = [
-    ['Pharmacie de la Gare', 'Officine 24h/24', 'green'],
-    ['PNA Dakar', 'Distributeur régional', 'blue'],
-    ['Grande Pharmacie', 'Officine partenaire', 'green'],
-  ];
-  readonly distributors: readonly [string, string][] = [
-    ['PNA', "Pharmacie Nationale d'Approvisionnement"],
-    ['Ubipharm', 'Grossiste répartiteur'],
-  ];
+  readonly activePartnerCount = computed(() => this.realPartners().filter(p => p.status === 'active').length);
+  readonly pharmacyPartners = computed(() => this.realPartners().filter(p => p.type === 'pharmacy'));
+  readonly distributorPartners = computed(() => this.realPartners().filter(p => p.type === 'distributor'));
 
   constructor() {
     this.reload();
     // Charger les partenaires depuis l'API réelle
     this.hospital.partners().subscribe({ next: p => this.realPartners.set(p), error: () => { /* ignore */ } });
-    this.structures.pharmacies().subscribe({ next: p => this.connectedPharma.set(p.slice(0, 3)), error: () => { /* ignore */ } });
   }
 
   readonly realPartners = signal<any[]>([]);
@@ -96,10 +85,11 @@ export class HopitalDash {
 
   submitConnect(partnerCode: string, type: string): void {
     // Appel API réel (recherche + ajout partenaire)
-    this.hospital.searchPartners(partnerCode).subscribe({
+    const partnerType = type === 'Pharmacie' ? 'pharmacy' : 'distributor';
+    this.hospital.searchPartners(partnerCode, partnerType).subscribe({
       next: results => {
         if (results.length > 0) {
-          this.hospital.addPartner(results[0].id, type).subscribe({
+          this.hospital.addPartner(results[0].id, partnerType).subscribe({
             next: () => {
               this.platform.notify(`Partenaire ${partnerCode} connecté avec succès`, 'ok');
               this.connectModal.set(false);

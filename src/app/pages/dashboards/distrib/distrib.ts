@@ -102,9 +102,11 @@ export class DistribDash {
       return;
     }
     const header = ['Médicament', 'Probabilité (%)', 'Délai moyen (jours)', 'Niveau de risque', 'Officines concernées'];
+    const csvCell = (value: unknown): string => `"${String(value ?? '').replaceAll('"', '""')}"`;
     const lines = rows.map(row => [row.medicine, row.probability, row.avg_delay_days, row.risk_level, row.affected_count]
-      .map(value => `"${String(value ?? '').replaceAll('"', '""')}"`).join(';'));
-    const blob = new Blob([[header.join(';'), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      .map(csvCell).join(','));
+    const csv = '\uFEFFsep=,\r\n' + [header.map(csvCell).join(','), ...lines].join('\r\n') + '\r\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

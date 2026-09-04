@@ -58,11 +58,11 @@
                 @if (notifOpen()) {
                   <div class="pf-notifpanel card">
                     <div class="pf-notifhead"><strong>Notifications</strong><span class="chip chip-green">{{ notifs().length }} nouvelles</span></div>
-                    @for (n of notifs(); track n.t) {
-                      <div class="pf-notifitem">
+                    @for (n of notifs(); track n.t; let i = $index) {
+                      <button type="button" class="pf-notifitem" (click)="openNotification(i)">
                         <span class="pf-notificon {{ n.s }}"><nv-icon [name]="n.icon" [size]="16"/></span>
                         <div><strong>{{ n.t }}</strong><span>{{ n.d }}</span></div>
-                      </div>
+                      </button>
                     }
                     @if (notifs().length === 0) { <p class="muted" style="padding:14px;font-size:13px">Aucune notification.</p> }
                   </div>
