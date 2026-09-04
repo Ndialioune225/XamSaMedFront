@@ -40,11 +40,7 @@ export class SanteDash {
   readonly tensionMid = computed(() => this.tension().filter(t => t.pct > 40).length);
   readonly sortedZones = computed(() => [...this.zones()].sort((a, b) => b.ruptures - a.ruptures));
 
-  readonly reports = signal<any[]>([
-    { period: 'Semaine 23 · 2026', type: 'Synthèse nationale', status: 'Prêt', s: 'ok' },
-    { period: 'Mai 2026', type: 'Rapport régional détaillé', status: 'Prêt', s: 'ok' },
-    { period: 'T2 · 2026', type: 'Bilan trimestriel', status: 'En cours', s: 'low' },
-  ]);
+  readonly reports = signal<any[]>([]);
   readonly keyStats: readonly [string, string, string][] = [
     ['Délais moyens de réappro.', '2,8 jours', 'trend'],
     ['Médicaments en tension', '5 références', 'pill'],
@@ -55,6 +51,7 @@ export class SanteDash {
     this.ph.overview().subscribe({ next: o => this.overview.set(o), error: () => { /* ignore */ } });
     this.ph.zones().subscribe({ next: z => this.zones.set(z), error: () => { /* ignore */ } });
     this.ph.tension().subscribe({ next: t => this.tension.set(t), error: () => { /* ignore */ } });
+    this.loadReports();
   }
 
   tone(pct: number): BarTone { return pct > 70 ? 'red' : pct > 40 ? 'amber' : 'green'; }
@@ -63,15 +60,63 @@ export class SanteDash {
   tlabel(pct: number): string { return pct > 70 ? 'Critique' : pct > 40 ? 'Élevée' : 'Modérée'; }
 
   generateReport(): void { this.generateModal.set(true); }
-  exportReport(reportType: string = 'national'): void { 
-    this.platform.notify(`Export PDF généré pour le rapport ${reportType}`, 'ok'); 
+  exportReport(reportId?: number): void {
+    const report = reportId
+      ? this.reports().find(item => item.id === reportId)
+      : this.reports().find(item => item.status === 'Prêt');
+    if (!report) {
+      this.platform.notify('Aucun rapport prêt à exporter', 'alert');
+      return;
+    }
+    this.ph.downloadReport(report.id).subscribe({
+      next: blob => this.download(blob, `rapport-xamsamed-${report.id}.pdf`),
+      error: () => this.platform.notify('Impossible de consulter ce rapport', 'alert'),
+    });
   }
 
   submitGenerate(period: string, type: string): void {
-    // ADM-006 & ADM-007: Ajout au signal d'historique (ADM-009)
-    const newReport = { period, type, status: 'Prêt', s: 'ok' };
-    this.reports.update(list => [newReport, ...list]);
-    this.platform.notify(`Rapport '${type}' pour '${period}' généré avec succès`, 'ok');
-    this.generateModal.set(false);
+    const periods: Record<string, string> = {
+      'Cette semaine': 'week',
+      'Ce mois-ci': 'month',
+      'Le mois dernier': 'month',
+      'Année en cours': 'quarter',
+    };
+    const types: Record<string, string> = {
+      'Synthèse nationale': 'national',
+      'Tensions critiques': 'tensions',
+      'Rapport régional détaillé': 'regional',
+    };
+    this.ph.generateReport(periods[period] ?? 'week', types[type] ?? 'national').subscribe({
+      next: report => {
+        if (!report) {
+          this.platform.notify('La génération du rapport a échoué', 'alert');
+          return;
+        }
+        this.platform.notify(`Rapport '${type}' généré avec succès`, 'ok');
+        this.generateModal.set(false);
+        this.loadReports();
+      },
+      error: () => this.platform.notify('La génération du rapport a échoué', 'alert'),
+    });
+  }
+
+  private loadReports(): void {
+    this.ph.reports().subscribe({
+      next: reports => this.reports.set(reports.map(report => ({
+        ...report,
+        status: report.status === 'completed' ? 'Prêt' : report.status === 'generating' ? 'En cours' : 'Échec',
+        s: report.status === 'completed' ? 'ok' : 'low',
+      }))),
+    });
+  }
+
+  private download(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    this.platform.notify('Rapport téléchargé', 'ok');
   }
 }

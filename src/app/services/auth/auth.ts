@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, finalize, tap } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { PlatformState } from '../platform/platform';
 import { RoleId } from '../../interfaces/models';
@@ -60,7 +61,12 @@ export class AuthService {
   /** Au démarrage : valide la session persistée si un token existe (best-effort). */
   restoreSession(): void {
     if (this.token()) {
-      this.me().subscribe({ error: () => { /* hors-ligne / token expiré : on garde la session locale */ } });
+      this.me().subscribe({
+        error: (error: HttpErrorResponse) => {
+          // Un 401 invalide la session persistée; les erreurs réseau restent tolérées.
+          if (error.status === 401) this.clear();
+        },
+      });
     }
   }
 

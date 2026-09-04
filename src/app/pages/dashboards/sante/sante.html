@@ -99,7 +99,7 @@
                 <p class="muted" style="font-size:13.5px;margin:4px 0 14px">{{ r.type }}</p>
                 <div style="display:flex;justify-content:space-between;align-items:center">
                   <pf-tag [s]="r.s">{{ r.status }}</pf-tag>
-                  <button class="btn btn-ghost btn-sm" [disabled]="r.status !== 'Prêt'" (click)="exportReport(r.type)">Consulter <nv-icon name="arrow" [size]="14"/></button>
+                  <button class="btn btn-ghost btn-sm" [disabled]="r.status !== 'Prêt'" (click)="exportReport(r.id)">Consulter <nv-icon name="arrow" [size]="14"/></button>
                 </div>
               </pf-card>
             }

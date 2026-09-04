@@ -37,7 +37,17 @@
           <header class="pf-top">
             <div class="pf-topsearch">
               <nv-icon name="search" [size]="18" color="var(--gray-text)"/>
-              <input placeholder="Rechercher un médicament, une officine…"/>
+              <input placeholder="Rechercher un médicament, une officine…" [value]="globalQuery()" (input)="searchGlobal($event)" (blur)="closeGlobalSearch()"/>
+              @if (globalResults().length > 0) {
+                <div class="pf-global-results" (mousedown)="$event.preventDefault()">
+                  @for (result of globalResults(); track result.type + result.id) {
+                    <button type="button" (click)="openGlobalResult(result)">
+                      <span>{{ result.type === 'medicine' ? 'Médicament' : 'Officine' }}</span>
+                      <strong>{{ result.label }}</strong>
+                    </button>
+                  }
+                </div>
+              }
             </div>
             <div class="pf-topright">
               <div class="pf-notifwrap">
@@ -60,10 +70,20 @@
               </div>
 
               <div class="pf-rolesw">
-                <div class="pf-roleswbtn" style="cursor:default">
+                <button type="button" class="pf-roleswbtn" [class.on]="profileOpen()" (click)="toggleProfile($event)" [attr.aria-expanded]="profileOpen()" aria-label="Ouvrir le menu du profil">
                   <span class="pf-avatar"><nv-icon [name]="r.icon" [size]="16"/></span>
                   <span class="pf-rolesname">{{ shortLabel(r.label) }}</span>
-                </div>
+                  <nv-icon name="chevron" [size]="15" [rotate]="profileOpen() ? 270 : 90"/>
+                </button>
+                @if (profileOpen()) {
+                  <div class="pf-rolemenu card" (click)="$event.stopPropagation()">
+                    <span class="pf-rolemenuh">Session actuelle</span>
+                    <button type="button" class="pf-rolemenuit" (click)="exit()">
+                      <span class="pf-rolemenuic"><nv-icon name="logout" [size]="16"/></span>
+                      <span>Se déconnecter</span>
+                    </button>
+                  </div>
+                }
               </div>
             </div>
           </header>

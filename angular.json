@@ -64,7 +64,8 @@
               "buildTarget": "xamsamed:build:production"
             },
             "development": {
-              "buildTarget": "xamsamed:build:development"
+              "buildTarget": "xamsamed:build:development",
+              "hmr": false
             }
           },
           "defaultConfiguration": "development"

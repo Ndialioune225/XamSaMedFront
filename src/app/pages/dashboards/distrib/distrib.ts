@@ -33,9 +33,10 @@ export class DistribDash {
   readonly demandes = signal<DemandeReg[]>([]);
   readonly zones = signal<ZoneInfo[]>([]);
   readonly autoAlerts = signal<ShortageAlert[]>([]);
+  readonly forecasts = signal<any[]>([]);
   readonly sel = signal<string | null>(null);
   readonly planModal = signal(false);
-  
+
   // --- LIVRAISONS ---
   readonly deliveries = signal<DeliveryRow[]>([]);
   readonly filterStatus = signal<DeliveryStatus | 'Toutes'>('Toutes');
@@ -48,19 +49,20 @@ export class DistribDash {
     const meta = user.profile_meta as any;
     const type = meta?.type || 'PNA';
     const region = meta?.region;
-    
+
     if (type === 'PNA') return 'PNA — Vue Nationale';
     if (type === 'PRA') return `PRA — Vue Régionale (${region || 'Toutes'})`;
     if (type === 'PRIVATE') return 'Distributeur Privé — Partenaires Uniquement';
     return 'Distributeur';
   });
 
-  // Prévisions dérivées des ruptures réelles signalées.
+  // Prévisions calculées par l'API sur les stocks et seuils réels.
   readonly tension = computed<Tension[]>(() => this.autoAlerts().map(a => ({
     nom: a.name,
-    pct: a.severity === 'high' ? Math.min(95, 60 + a.pharmacy_reports.length * 8) : Math.min(70, 40 + a.pharmacy_reports.length * 6),
-    delai: ((a.pharmacy_reports.length * 0.6) + 1).toFixed(1).replace('.', ',') + ' j',
+    pct: a.severity === 'high' ? Math.min(95, 60 + a.pharmacies.length * 8) : Math.min(70, 40 + a.pharmacies.length * 6),
+    delai: ((a.pharmacies.length * 0.6) + 1).toFixed(1).replace('.', ',') + ' j',
   })));
+  readonly forecastRows = computed(() => this.forecasts());
   readonly critZones = computed(() => this.zones().filter(z => z.niveau === 'crit').length);
   readonly tensionHigh = computed(() => this.autoAlerts().filter(a => a.severity === 'high').length);
   readonly urgentes = computed(() => this.demandes().filter(d => d.tension === 'haute').length);
@@ -68,7 +70,7 @@ export class DistribDash {
     const s = this.sel();
     return s ? this.zones().filter(z => z.nom === s) : this.zones();
   });
-  
+
   readonly filteredDeliveries = computed(() => {
     const s = this.filterStatus();
     return s === 'Toutes' ? this.deliveries() : this.deliveries().filter(d => d.status === s);
@@ -82,6 +84,7 @@ export class DistribDash {
     this.distributor.regionalDemands().subscribe({ next: d => this.demandes.set(d), error: () => { /* ignore */ } });
     this.distributor.zones().subscribe({ next: z => this.zones.set(z), error: () => { /* ignore */ } });
     this.distributor.alerts().subscribe({ next: a => this.autoAlerts.set(a), error: () => { /* ignore */ } });
+    this.distributor.previsions().subscribe({ next: p => this.forecasts.set(p), error: () => { /* ignore */ } });
     this.distributor.deliveries().subscribe({ next: d => this.deliveries.set(d), error: () => { /* ignore */ } });
   }
 
@@ -92,6 +95,24 @@ export class DistribDash {
   sevLabel(sev: string): string { return sev === 'high' ? 'Critique' : 'Élevé'; }
 
   forecast(zone: string): void { this.platform.notify('Prévision mise à jour pour ' + zone, 'info'); }
+  exportForecasts(): void {
+    const rows = this.forecastRows();
+    if (rows.length === 0) {
+      this.platform.notify('Aucune prévision à exporter', 'alert');
+      return;
+    }
+    const header = ['Médicament', 'Probabilité (%)', 'Délai moyen (jours)', 'Niveau de risque', 'Officines concernées'];
+    const lines = rows.map(row => [row.medicine, row.probability, row.avg_delay_days, row.risk_level, row.affected_count]
+      .map(value => `"${String(value ?? '').replaceAll('"', '""')}"`).join(';'));
+    const blob = new Blob([[header.join(';'), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'previsions-xamsamed.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    this.platform.notify('Rapport des prévisions exporté', 'ok');
+  }
   plan(id: string, zone: string): void {
     this.demandes.update(list => list.filter(d => d.id !== id));
     this.platform.notify('Livraison planifiée vers ' + zone, 'ok');
@@ -115,13 +136,13 @@ export class DistribDash {
       next: () => { this.platform.notify('La livraison est en transit', 'info'); this.reload(); }
     });
   }
-  
+
   confirmDelivery(id: string): void {
     this.distributor.changeDeliveryStatus(id, 'Livrée').subscribe({
       next: () => { this.platform.notify('Réception confirmée, stock mis à jour', 'ok'); this.reload(); }
     });
   }
-  
+
   cancelDelivery(id: string): void {
     this.distributor.changeDeliveryStatus(id, 'Annulée').subscribe({
       next: () => { this.platform.notify('Livraison annulée', 'alert'); this.reload(); }

@@ -33,7 +33,7 @@
               @for (a of autoAlerts(); track a.medicine_id) {
                 <div class="pf-li">
                   <span class="pf-liic {{ a.severity === 'high' ? 'red' : 'amber' }}"><nv-icon name="bell" [size]="18"/></span>
-                  <div class="pf-libody"><strong>{{ a.name }}</strong><span>{{ a.pharmacy_reports.length }} officine(s) en tension</span></div>
+                  <div class="pf-libody"><strong>{{ a.name }}</strong><span>{{ a.pharmacies.length }} officine(s) en tension</span></div>
                   <pf-tag [s]="sevTag(a.severity)">{{ sevLabel(a.severity) }}</pf-tag>
                 </div>
               }
@@ -104,21 +104,23 @@
 
       @case ('prev') {
         <div>
-          <pf-page-head title="Prévisions logistiques" sub="Anticipez les besoins par médicament sur les 14 prochains jours."/>
+          <pf-page-head title="Prévisions logistiques" sub="Anticipez les besoins par médicament sur les 14 prochains jours.">
+            <button actions class="btn btn-outline btn-sm" (click)="exportForecasts()"><nv-icon name="doc" [size]="16"/> Exporter le rapport</button>
+          </pf-page-head>
           <pf-card title="Médicaments à risque de rupture" sub="Probabilité de tension estimée">
-            @for (t of tension(); track t.nom) {
+            @for (t of forecastRows(); track t.medicine_id) {
               <div style="padding:14px 0;border-bottom:1px solid var(--gray-line)">
                 <div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center">
-                  <span class="pf-medname">{{ t.nom }}</span>
+                  <span class="pf-medname">{{ t.medicine }}</span>
                   <span style="display:flex;gap:10px;align-items:center">
-                    <span class="muted" style="font-size:13px">délai réappro. {{ t.delai }}</span>
-                    <strong style="font-family:'Montserrat'" [style.color]="t.pct > 50 ? '#cf4338' : 'var(--blue)'">{{ t.pct }}%</strong>
+                    <span class="muted" style="font-size:13px">délai réappro. {{ t.avg_delay_days }} j</span>
+                    <strong style="font-family:'Montserrat'" [style.color]="t.probability > 50 ? '#cf4338' : 'var(--blue)'">{{ t.probability }}%</strong>
                   </span>
                 </div>
-                <pf-bar [pct]="t.pct" [tone]="tone(t.pct)"/>
+                <pf-bar [pct]="t.probability" [tone]="tone(t.probability)"/>
               </div>
             }
-            @if (tension().length === 0) { <div class="muted" style="padding:14px 0">Aucune tension détectée pour le moment.</div> }
+            @if (forecastRows().length === 0) { <div class="muted" style="padding:14px 0">Aucune prévision disponible pour le moment.</div> }
           </pf-card>
         </div>
       }
@@ -128,7 +130,7 @@
           <pf-page-head title="Suivi des livraisons" sub="Gérez le cycle de vie de vos expéditions.">
             <button actions class="btn btn-green btn-sm" (click)="planLivraison()"><nv-icon name="plus" [size]="16"/> Nouvelle livraison</button>
           </pf-page-head>
-          
+
           <div style="display:flex;gap:8px;margin-bottom:16px">
             <button class="btn btn-sm" [class.btn-blue]="filterStatus() === 'Toutes'" [class.btn-outline]="filterStatus() !== 'Toutes'" (click)="filterStatus.set('Toutes')">Toutes</button>
             <button class="btn btn-sm" [class.btn-blue]="filterStatus() === 'Planifiée'" [class.btn-outline]="filterStatus() !== 'Planifiée'" (click)="filterStatus.set('Planifiée')">Planifiées</button>

@@ -38,7 +38,7 @@ export interface PharmacyReport {
 export interface ShortageAlert {
   medicine_id: number;
   name: string;
-  pharmacy_reports: PharmacyReport[];
+  pharmacies: PharmacyReport[];
   severity: 'high' | 'medium' | 'low' | string;
 }
 export interface DistributorAlertsResponse {
@@ -54,6 +54,16 @@ export interface ApiMedicine {
   form: string | null;
   dosage: string | null;
   is_controlled: boolean;
+}
+
+export interface GlobalSearchResult {
+  type: 'medicine' | 'pharmacy' | string;
+  id: number;
+  label: string;
+  name?: string;
+  dosage?: string | null;
+  form?: string | null;
+  city?: string | null;
 }
 export interface ApiAvailabilityRow {
   structure_id: number;
@@ -114,8 +124,8 @@ export interface ApiDemande {
 export interface ApiRegionalDemand {
   zone: string;
   medicine: string;
-  officines: number;
-  volume: number;
+  officines_count: number;
+  estimated_need: number;
   tension: string;
 }
 export interface ApiZone {

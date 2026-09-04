@@ -54,6 +54,13 @@ export class PublicHealthService {
     );
   }
 
+  /** GET /public-health/reports/{id}/download */
+  downloadReport(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/public-health/reports/${id}/download`, {
+      responseType: 'blob',
+    });
+  }
+
   /** GET /public-health/dashboard — indicateurs du tableau de bord. */
   dashboard(): Observable<any> {
     return this.http.get<{ data: any }>(`${this.base}/public-health/dashboard`).pipe(

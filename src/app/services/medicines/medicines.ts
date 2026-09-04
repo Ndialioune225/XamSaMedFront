@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiAvailabilityRow, ApiMedicine } from '../../interfaces/api';
+import { ApiAvailabilityRow, ApiMedicine, GlobalSearchResult } from '../../interfaces/api';
 import { AvailabilityRow, DispoState, Med } from '../../interfaces/models';
 import { distanceLabel } from '../structures/structures';
 
@@ -12,11 +12,20 @@ export class MedicineService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
 
-  /** GET /search?q= → Med[] (vue patient). */
+  /** GET /medicines?search= → Med[] (vue patient). */
   search(q: string): Observable<Med[]> {
-    const params = new HttpParams().set('q', q);
-    return this.http.get<{ data: ApiMedicine[] }>(`${this.base}/search`, { params }).pipe(
+    const searchParams = new HttpParams().set('search', q);
+    return this.http.get<{ data: ApiMedicine[] }>(`${this.base}/medicines`, { params: searchParams }).pipe(
       map(r => r.data.map(toMed)),
+      catchError(() => of([])),
+    );
+  }
+
+  /** GET /search?q= → médicaments et officines pour la recherche globale. */
+  globalSearch(q: string): Observable<GlobalSearchResult[]> {
+    const params = new HttpParams().set('q', q);
+    return this.http.get<{ data: GlobalSearchResult[] }>(`${this.base}/search`, { params }).pipe(
+      map(r => r.data ?? []),
       catchError(() => of([])),
     );
   }

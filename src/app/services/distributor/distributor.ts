@@ -100,7 +100,7 @@ export class DistributorService {
   private applyScopeFilter<T>(items: T[], type: 'alert' | 'demand' | 'zone'): T[] {
     const user = this.auth.user();
     if (!user || user.role !== 'distributor_user') return items;
-    
+
     // On cast profile_meta pour accéder aux attributs du distributeur
     const meta = user.profile_meta as any;
     const distType = meta?.type || 'PNA'; // Par défaut PNA si non défini
@@ -116,13 +116,13 @@ export class DistributorService {
         if (type === 'demand') return (item as unknown as DemandeReg).zone === region;
         if (type === 'zone') return (item as unknown as ZoneInfo).nom === region;
         // Pour les alertes, on simule un filtrage ou on les laisse passer si la structure ne permet pas de filtrer géographiquement ici
-        return true; 
+        return true;
       });
     }
 
     if (distType === 'PRIVATE') {
       // DIS-SCOPE-005: Distributeur privé (limité aux partenaires privés, simulé ici)
-      return items; 
+      return items;
     }
 
     return items;
@@ -134,8 +134,8 @@ function toDemandeReg(d: ApiRegionalDemand): DemandeReg {
     id: `${d.zone}-${d.medicine}`,
     zone: d.zone,
     med: d.medicine,
-    vol: `~${Math.max(1, d.officines) * 30} u.`,
+    vol: `~${Math.max(0, d.estimated_need)} u.`,
     tension: asZoneLevel(d.tension),
-    officines: d.officines,
+    officines: d.officines_count,
   };
 }
