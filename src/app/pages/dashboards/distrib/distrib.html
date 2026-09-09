@@ -7,7 +7,7 @@
           <div class="pf-statgrid">
             <pf-stat icon="layers" tone="blue" label="Demandes régionales" [value]="demandes().length"/>
             <pf-stat icon="alert" tone="red" label="Zones critiques" [value]="critZones()"/>
-            <pf-stat icon="truck" tone="green" label="Livraisons planifiées" value="18" delta="6 cette semaine" [deltaUp]="true"/>
+            <pf-stat icon="truck" tone="green" label="Livraisons planifiées" [value]="dashboardData().planned ?? 0"/>
             <pf-stat icon="pill" tone="amber" label="Médicaments en tension" [value]="tensionHigh()"/>
           </div>
           <div class="pf-cols">

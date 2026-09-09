@@ -106,7 +106,7 @@
           </div>
           <pf-card title="Statistiques clés" sub="Indicateurs nationaux de suivi">
             <div class="pf-cols3" style="margin-top:4px">
-              @for (k of keyStats; track k[0]) {
+              @for (k of keyStats(); track k[0]) {
                 <div style="padding:4px 0">
                   <span class="pf-staticon green" style="margin-bottom:10px"><nv-icon [name]="k[2]" [size]="18"/></span>
                   <strong style="display:block;font-family:'Montserrat';font-size:22px;color:var(--blue)">{{ k[1] }}</strong>

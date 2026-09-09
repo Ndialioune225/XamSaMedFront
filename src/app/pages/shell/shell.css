@@ -3,4 +3,5 @@
 .pf-global-results button { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 10px 12px; text-align: left; border: 0; background: #fff; cursor: pointer; }
 .pf-global-results button:hover { background: var(--gray-soft); }
 .pf-global-results span { color: var(--gray-text); font-size: 11px; }
+.pf-global-state { padding: 14px 12px; color: var(--gray-text); font-size: 13px; text-align: center; }
 /* shell — styles spécifiques au composant. La charte globale vit dans src/styles.css. */

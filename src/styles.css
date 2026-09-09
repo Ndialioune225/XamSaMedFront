@@ -369,7 +369,7 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .pf-loginhint{margin-top:14px;font-size:12.5px;color:var(--gray-text)}
 
 /* ===================== APP SHELL ===================== */
-.pf-app{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh;background:var(--gray-bg)}
+.pf-app{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh;background:var(--gray-bg);transition:grid-template-columns .24s ease}
 .pf-app.col{grid-template-columns:88px minmax(0,1fr)}
 .pf-side{background:linear-gradient(180deg,var(--blue) 0%,var(--blue-700) 100%);color:#fff;
   display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden}
@@ -382,21 +382,25 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .pf-rolepilltxt strong{font-family:'Montserrat';font-weight:700;font-size:14px;color:#fff}
 .pf-nav{display:flex;flex-direction:column;gap:4px;flex:1}
 .pf-navitem{display:flex;align-items:center;gap:13px;width:100%;text-align:left;color:rgba(255,255,255,.72);
-  font-family:'Montserrat';font-weight:600;font-size:14px;padding:11px 12px;border-radius:10px;transition:.15s}
+  font-family:'Montserrat';font-weight:600;font-size:14px;padding:11px 12px;border-radius:10px;transition:.15s;position:relative}
 .pf-navitem:hover{background:rgba(255,255,255,.08);color:#fff}
 .pf-navitem.on{background:var(--green);color:#fff}
 .pf-navic{display:grid;place-items:center;flex:none}
-.pf-navbadge{margin-left:auto;background:#cf4338;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;
-  border-radius:10px;display:grid;place-items:center;padding:0 6px}
+.pf-navbadge{margin-left:auto;background:#cf4338;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;
+  border-radius:9px;display:grid;place-items:center;padding:0 5px}
 .pf-navitem.on .pf-navbadge{background:rgba(255,255,255,.25)}
+.pf-collapsible{display:block;max-width:190px;opacity:1;overflow:hidden;white-space:nowrap;transition:max-width .2s ease,opacity .15s ease}
+.pf-collapsible.is-hidden{max-width:0;opacity:0}
 .pf-sidefoot{display:flex;flex-direction:column;gap:4px;border-top:1px solid rgba(255,255,255,.12);padding-top:10px;margin-top:10px}
 .pf-app.col .pf-navitem{justify-content:center;padding:11px 0}
 .pf-app.col .pf-sidetop{display:flex;justify-content:center;padding:6px 0 18px}
 .pf-app.col .pf-sidetop .nv-logo{width:42px;overflow:hidden;justify-content:center}
 .pf-app.col .pf-sidetop .nv-logo>span:nth-child(2){display:none !important}
-.pf-app.col .pf-rolepill{justify-content:center;width:56px;height:56px;padding:0;margin:0 auto 18px}
-.pf-app.col .pf-rolepillic{width:38px;height:38px}
+.pf-app.col .pf-rolepill{justify-content:center;gap:0;width:56px;height:56px;padding:0;margin:0 auto 18px}
+.pf-app.col .pf-rolepillic{width:38px;height:38px;margin:0;display:grid;place-items:center}
 .pf-app.col .pf-navitem{width:56px;height:48px;margin:0 auto;padding:0;border-radius:12px}
+.pf-app.col .pf-navitem{gap:0}
+.pf-app.col .pf-navbadge{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 3px;font-size:9px;border:2px solid var(--green);z-index:2}
 .pf-app.col .pf-sidefoot{align-items:center}
 .pf-app.col .pf-sidefoot .pf-navitem{width:56px}
 
@@ -579,9 +583,11 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
   .pf-sidetop{display:flex;justify-content:center;padding-left:0;padding-right:0}
   .pf-sidetop .nv-logo{width:42px;overflow:hidden;justify-content:center}
   .pf-rolepill{width:52px;height:52px;padding:0;justify-content:center;margin-left:auto;margin-right:auto}
+  .pf-app.col .pf-rolepill{gap:0}
   .pf-navitem{justify-content:center;width:52px;height:46px;margin-left:auto;margin-right:auto;padding:0}
   .pf-sidefoot{align-items:center}
   .pf-sidefoot .pf-navitem{width:52px}
+  .pf-app.col .pf-navbadge{top:4px;right:4px}
   .pf-rolesname{display:none}
 }
 @media(max-width:760px){

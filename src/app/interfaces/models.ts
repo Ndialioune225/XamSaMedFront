@@ -17,10 +17,10 @@ export interface Demande { id: string; med: string; de: string; type: string; qt
 export interface DemandeReg { id: string; zone: string; med: string; vol: string; tension: ZoneLevel; officines: number; }
 export interface ZoneInfo { nom: string; x: number; y: number; niveau: ZoneLevel; ruptures: number; }
 export interface Tension { nom: string; pct: number; delai: string; }
-export interface AlerteHop { id: string; med: string; service: string; niveau: ZoneLevel; reste: string; quand: string; }
+export interface AlerteHop { id: string; medId?: number | null; med: string; service: string; niveau: ZoneLevel; reste: string; quand: string; }
 export interface Role { id: RoleId; label: string; icon: string; desc: string; }
 export interface NavItem { id: string; label: string; icon: string; badge?: number; }
-export interface Notif { icon: string; s: NotifKind; t: string; d: string; }
+export interface Notif { icon: string; s: NotifKind; t: string; d: string; target?: string; }
 export interface Feature { role: string; icon: string; color: 'green' | 'blue'; items: [string, string, string][]; }
 
 /* ---- Vues mappées depuis l'API (consommées par les dashboards) ---- */

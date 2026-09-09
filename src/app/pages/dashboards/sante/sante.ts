@@ -41,11 +41,11 @@ export class SanteDash {
   readonly sortedZones = computed(() => [...this.zones()].sort((a, b) => b.ruptures - a.ruptures));
 
   readonly reports = signal<any[]>([]);
-  readonly keyStats: readonly [string, string, string][] = [
-    ['Délais moyens de réappro.', '2,8 jours', 'trend'],
-    ['Médicaments en tension', '5 références', 'pill'],
-    ['Zones critiques actives', '2 régions', 'pin'],
-  ];
+  readonly keyStats = computed<readonly [string, string, string][]>(() => [
+    ['Médicaments en tension', String(this.overview().medicines_in_tension), 'pill'],
+    ['Zones critiques actives', String(this.critZones()), 'pin'],
+    ['Ruptures signalées', String(this.overview().ruptures), 'alert'],
+  ]);
 
   constructor() {
     this.ph.overview().subscribe({ next: o => this.overview.set(o), error: () => { /* ignore */ } });

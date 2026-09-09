@@ -6,6 +6,7 @@ import { Stat } from '../../../components/stat/stat';
 import { Tag } from '../../../components/tag/tag';
 import { PlatformState } from '../../../services/platform/platform';
 import { HospitalService } from '../../../services/hospital/hospital';
+import { MedicineService } from '../../../services/medicines/medicines';
 import { AlerteHop, CritMedRow } from '../../../interfaces/models';
 
 /* ============================================================
@@ -21,6 +22,7 @@ import { AlerteHop, CritMedRow } from '../../../interfaces/models';
 export class HopitalDash {
   private readonly platform = inject(PlatformState);
   private readonly hospital = inject(HospitalService);
+  private readonly medicines = inject(MedicineService);
 
   readonly section = model.required<string>();
   readonly alertes = signal<AlerteHop[]>([]);
@@ -58,7 +60,12 @@ export class HopitalDash {
   critTag(s: string): string { return s === 'out' ? 'crit' : s === 'low' ? 'low' : 'ok'; }
   critLabel(s: string): string { return s === 'out' ? 'Rupture' : s === 'low' ? 'Sous tension' : 'Suivi normal'; }
 
-  askRestock(): void { this.platform.notify('Demande envoyée aux partenaires', 'info'); }
+  askRestock(alert: AlerteHop): void {
+    this.hospital.requestRestock(Number(alert.id)).subscribe({
+      next: () => this.platform.notify('Demande de réapprovisionnement envoyée aux partenaires', 'info'),
+      error: () => this.platform.notify('Échec de la demande de réapprovisionnement', 'alert'),
+    });
+  }
 
   resolve(id: string): void {
     this.hospital.resolveAlert(Number(id)).subscribe({
@@ -73,13 +80,20 @@ export class HopitalDash {
   submitSignal(med: string, service: string, qty: string): void {
     const remaining = parseInt(qty, 10);
     // HOS-002 + HOS-003: Signaler la rupture via l'API réelle
-    this.hospital.createAlert(med, service, 'high', remaining).subscribe({
-      next: () => {
-        this.platform.notify(`Alerte signalée pour ${med} (${service}) — réseau notifié automatiquement`, 'ok');
-        this.signalModal.set(false);
-        this.reload();
+    this.medicines.search(med).subscribe({
+      next: matches => {
+        const medicine = matches[0];
+        if (!medicine) { this.platform.notify('Médicament introuvable dans le catalogue', 'alert'); return; }
+        this.hospital.createAlert(medicine.id, service, 'haute', remaining).subscribe({
+          next: () => {
+            this.platform.notify(`Alerte signalée pour ${medicine.nom} (${service})`, 'ok');
+            this.signalModal.set(false);
+            this.reload();
+          },
+          error: () => this.platform.notify('Échec du signalement', 'alert'),
+        });
       },
-      error: () => this.platform.notify('Échec du signalement', 'alert'),
+      error: () => this.platform.notify('Impossible de consulter le catalogue', 'alert'),
     });
   }
 

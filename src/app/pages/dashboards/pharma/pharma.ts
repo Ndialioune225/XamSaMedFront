@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -7,6 +8,8 @@ import { Bar } from '../../../components/bar/bar';
 import { Tag } from '../../../components/tag/tag';
 import { PlatformState } from '../../../services/platform/platform';
 import { PharmacyService } from '../../../services/pharmacy/pharmacy';
+import { MedicineService } from '../../../services/medicines/medicines';
+import { AuthService } from '../../../services/auth/auth';
 import { DemandeRow, StockRow } from '../../../interfaces/models';
 import { PharmaDemandes } from '../pharma-demandes/pharma-demandes';
 import { SimpleProfile } from '../profile/profile';
@@ -26,6 +29,7 @@ type BarTone = 'green' | 'amber' | 'red' | 'blue';
 export class PharmaDash {
   private readonly platform = inject(PlatformState);
   private readonly pharmacy = inject(PharmacyService);
+  private readonly medicines = inject(MedicineService);
 
   readonly section = model.required<string>();
   readonly stock = signal<StockRow[]>([]);
@@ -35,7 +39,7 @@ export class PharmaDash {
   readonly restockModal = signal<StockRow | null>(null);
   readonly sellModal = signal<StockRow | null>(null);
   readonly adjustModal = signal<StockRow | null>(null);
-  
+
   // Historique (mock)
   readonly history = signal<any[]>([]);
 
@@ -45,24 +49,44 @@ export class PharmaDash {
   readonly newDem = computed(() => this.demandes().filter(d => d.status === 'pending').length);
   readonly topStock = computed(() => this.stock().slice(0, 5));
 
-  readonly profilFields: readonly [string, string][] = [
-    ['Titulaire', 'Dr. Fatou Sow'],
-    ['Téléphone', '+221 33 821 00 00'],
-    ['Horaires', '08h – 22h'],
-    ['Partage de stock', 'Partiel (demandes ciblées uniquement)'],
-    ['Distributeur', 'PNA · Ubipharm'],
-  ];
+  protected readonly auth = inject(AuthService);
+
+  readonly profilFields = computed<readonly [string, string][]>(() => {
+    const u = this.auth.user();
+    if (!u) return [];
+    const meta = u.profile_meta as any || {};
+    return [
+      ['Titulaire', meta.titulaire || 'Non renseigné'],
+      ['Téléphone', u.phone || '+221 33 000 00 00'],
+      ['Email', u.email || 'Non renseigné'],
+      ['Région', meta.region || 'Non renseignée'],
+    ];
+  });
 
   constructor() { this.reload(); }
 
   reload(): void {
-    this.pharmacy.stock().subscribe({ next: s => this.stock.set(s), error: () => { /* ignore */ } });
+    this.pharmacy.stock().subscribe({
+      next: s => {
+        this.stock.set(s);
+        if (s.length) {
+          forkJoin(s.map(stock => this.pharmacy.stockMovements(stock.stockId))).subscribe({
+            next: movements => this.history.set(movements.flat().map((movement: any) => ({
+              id: movement.id,
+              date: movement.created_at ? new Date(movement.created_at).toLocaleString('fr-FR') : '',
+              type: movement.type_label ?? movement.type,
+              medName: movement.medicine ?? '—',
+              qty: movement.direction === 'sortie' ? -movement.quantity : movement.quantity,
+              newStock: movement.new_quantity,
+              user: movement.user ?? '—',
+            }))),
+            error: () => this.history.set([]),
+          });
+        } else this.history.set([]);
+      },
+      error: () => { this.stock.set([]); this.history.set([]); },
+    });
     this.pharmacy.demandes().subscribe({ next: d => this.demandes.set(d), error: () => { /* ignore */ } });
-    
-    // Charger l'historique mocké
-    if ((this.pharmacy as any).stockMovements) {
-      (this.pharmacy as any).stockMovements().subscribe({ next: (h: any) => this.history.set(h) });
-    }
   }
 
   pct(s: StockRow): number {
@@ -86,26 +110,41 @@ export class PharmaDash {
   submitRestock(qtyInput: string): void {
     const s = this.restockModal();
     if (!s) return;
-    
+
     const qty = parseInt(qtyInput, 10);
     if (isNaN(qty) || qty <= 0) return;
-    
-    // Pour l'API existante, on passe la nouvelle quantité cible
-    const target = s.q + qty + s.reserved;
-    this.pharmacy.restock(s.stockId, target).subscribe({
-      next: () => { 
-        this.platform.notify(`${s.name} réapprovisionné de ${qty} unités`, 'ok'); 
+
+    this.pharmacy.restock(s.stockId, qty).subscribe({
+      next: () => {
+        this.platform.notify(`${s.name} réapprovisionné de ${qty} unités`, 'ok');
         this.restockModal.set(null);
-        this.reload(); 
+        this.reload();
       },
       error: () => this.platform.notify('Échec du réapprovisionnement', 'alert'),
     });
   }
 
   submitAddRef(name: string, form: string, qty: string, seuil: string): void {
-    // Dans une version complète, on appellerait l'API ici pour créer la référence.
-    this.platform.notify(`${name} a été ajouté au stock`, 'ok');
-    this.addRefModal.set(false);
+    const quantity = parseInt(qty, 10);
+    const threshold = parseInt(seuil, 10);
+    if (!name.trim() || isNaN(quantity) || quantity < 0 || isNaN(threshold) || threshold < 0) {
+      this.platform.notify('Informations de référence invalides', 'alert');
+      return;
+    }
+    this.medicines.search(name.trim()).subscribe({
+      next: matches => {
+        const medicine = matches[0];
+        if (!medicine) {
+          this.platform.notify('Médicament introuvable dans le catalogue', 'alert');
+          return;
+        }
+        this.pharmacy.addStock(Number(medicine.id), quantity, threshold).subscribe({
+          next: () => { this.platform.notify(`${medicine.nom} a été ajouté au stock`, 'ok'); this.addRefModal.set(false); this.reload(); },
+          error: () => this.platform.notify('Cette référence existe peut-être déjà dans le stock', 'alert'),
+        });
+      },
+      error: () => this.platform.notify('Impossible de consulter le catalogue', 'alert'),
+    });
   }
 
   // --- Vente ---
@@ -118,12 +157,11 @@ export class PharmaDash {
       this.platform.notify('Quantité invalide', 'alert');
       return;
     }
-    const target = s.q - qty + s.reserved;
-    this.pharmacy.restock(s.stockId, target).subscribe({
-      next: () => { 
-        this.platform.notify(`Vente de ${qty} unité(s) enregistrée`, 'ok'); 
+    this.pharmacy.externalSale(s.stockId, qty, 'Vente hors plateforme').subscribe({
+      next: () => {
+        this.platform.notify(`Vente de ${qty} unité(s) enregistrée`, 'ok');
         this.sellModal.set(null);
-        this.reload(); 
+        this.reload();
       }
     });
   }
@@ -135,18 +173,21 @@ export class PharmaDash {
     if (!s) return;
     const diff = parseInt(qtyInput, 10);
     if (isNaN(diff)) return;
-    const target = s.q + diff + s.reserved;
-    this.pharmacy.restock(s.stockId, Math.max(0, target)).subscribe({
-      next: () => { 
-        this.platform.notify(`Ajustement enregistré (${diff}) - Motif: ${motif}`, 'info'); 
+    const target = Math.max(0, s.q + diff);
+    this.pharmacy.inventoryAdjustment(s.stockId, target, motif).subscribe({
+      next: () => {
+        this.platform.notify(`Ajustement enregistré (${diff}) - Motif: ${motif}`, 'info');
         this.adjustModal.set(null);
-        this.reload(); 
+        this.reload();
       }
     });
   }
 
   // --- Alerte Distributeur ---
   alertDistrib(s: StockRow): void {
-    this.platform.notify(`Alerte envoyée au distributeur pour ${s.name}`, 'ok');
+    this.pharmacy.alertDistributor(s.stockId, `Stock faible pour ${s.name}`).subscribe({
+      next: () => this.platform.notify(`Alerte envoyée au distributeur pour ${s.name}`, 'ok'),
+      error: () => this.platform.notify('Échec de l’envoi de l’alerte', 'alert'),
+    });
   }
 }

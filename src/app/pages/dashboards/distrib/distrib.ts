@@ -33,6 +33,7 @@ export class DistribDash {
   readonly demandes = signal<DemandeReg[]>([]);
   readonly zones = signal<ZoneInfo[]>([]);
   readonly autoAlerts = signal<ShortageAlert[]>([]);
+  readonly dashboardData = signal<any>({});
   readonly forecasts = signal<any[]>([]);
   readonly sel = signal<string | null>(null);
   readonly planModal = signal(false);
@@ -81,6 +82,7 @@ export class DistribDash {
   }
 
   reload(): void {
+    this.distributor.dashboard().subscribe({ next: d => this.dashboardData.set(d), error: () => { /* ignore */ } });
     this.distributor.regionalDemands().subscribe({ next: d => this.demandes.set(d), error: () => { /* ignore */ } });
     this.distributor.zones().subscribe({ next: z => this.zones.set(z), error: () => { /* ignore */ } });
     this.distributor.alerts().subscribe({ next: a => this.autoAlerts.set(a), error: () => { /* ignore */ } });
@@ -94,7 +96,10 @@ export class DistribDash {
   sevTag(sev: string): string { return sev === 'high' ? 'crit' : 'low'; }
   sevLabel(sev: string): string { return sev === 'high' ? 'Critique' : 'Élevé'; }
 
-  forecast(zone: string): void { this.platform.notify('Prévision mise à jour pour ' + zone, 'info'); }
+  forecast(zone: string): void {
+    this.section.set('prev');
+    this.platform.notify('Prévisions chargées pour ' + zone, 'info');
+  }
   exportForecasts(): void {
     const rows = this.forecastRows();
     if (rows.length === 0) {
@@ -116,8 +121,8 @@ export class DistribDash {
     this.platform.notify('Rapport des prévisions exporté', 'ok');
   }
   plan(id: string, zone: string): void {
-    this.demandes.update(list => list.filter(d => d.id !== id));
-    this.platform.notify('Livraison planifiée vers ' + zone, 'ok');
+    this.planModal.set(true);
+    this.platform.notify('Complétez le formulaire pour planifier la livraison vers ' + zone, 'info');
   }
   planLivraison(): void { this.planModal.set(true); }
 

@@ -100,14 +100,16 @@ export interface ApiOrder {
 export interface ApiStockRow {
   id: number;
   medicine_id: number;
-  medicine: string | null;
+  medicine?: string | null;
+  medicine_name?: string | null;
   form: string | null;
   dosage: string | null;
   is_controlled: boolean;
   quantity: number;
   reserved: number;
   available: number;
-  threshold: number;
+  threshold?: number;
+  threshold_qty?: number;
   status: string;
 }
 export interface ApiDemande {
@@ -115,6 +117,7 @@ export interface ApiDemande {
   medicine: string | null;
   medicine_id: number;
   from: string | null;
+  patient?: string | null;
   type: string;
   qty: number;
   urgency: string;
@@ -136,6 +139,7 @@ export interface ApiZone {
 }
 export interface ApiHospitalAlert {
   id: number;
+  medicine_id?: number | null;
   medicine: string | null;
   service: string | null;
   level: string;

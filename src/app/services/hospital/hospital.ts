@@ -28,7 +28,11 @@ export class HospitalService {
 
   /** POST /hospital/alerts */
   createAlert(medicine: string, service: string, level: string, remaining: number): Observable<unknown> {
-    return this.http.post(`${this.base}/hospital/alerts`, { medicine, service, level, remaining });
+    return this.http.post(`${this.base}/hospital/alerts`, { medicine_id: Number(medicine), service, level, remaining_quantity: remaining });
+  }
+
+  requestRestock(alertId: number): Observable<unknown> {
+    return this.http.post(`${this.base}/hospital/alerts/${alertId}/restock`, {});
   }
 
   /** GET /hospital/critical-medicines */
@@ -82,6 +86,7 @@ export class HospitalService {
 function toAlerteHop(a: ApiHospitalAlert): AlerteHop {
   return {
     id: String(a.id),
+    medId: a.medicine_id ?? null,
     med: a.medicine ?? '—',
     service: a.service ?? '—',
     niveau: asZoneLevel(a.level),

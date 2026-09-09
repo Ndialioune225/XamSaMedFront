@@ -9,25 +9,25 @@
           </div>
           <div class="pf-rolepill">
             <span class="pf-rolepillic"><nv-icon [name]="r.icon" [size]="18"/></span>
-            @if (!collapsed()) { <span class="pf-rolepilltxt"><span>Espace</span><strong>{{ shortLabel(r.label) }}</strong></span> }
+            <span class="pf-rolepilltxt pf-collapsible" [class.is-hidden]="collapsed()"><span>Espace</span><strong>{{ shortLabel(r.label) }}</strong></span>
           </div>
           <nav class="pf-nav">
             @for (n of nav(); track n.id) {
               <button class="pf-navitem" [class.on]="sec() === n.id" (click)="select(n.id)" [title]="n.label">
                 <span class="pf-navic"><nv-icon [name]="n.icon" [size]="20"/></span>
-                @if (!collapsed()) { <span>{{ n.label }}</span> }
-                @if (!collapsed() && n.badge) { <span class="pf-navbadge">{{ n.badge }}</span> }
+                <span class="pf-collapsible" [class.is-hidden]="collapsed()">{{ n.label }}</span>
+                @if (n.badge && n.badge > 0) { <span class="pf-navbadge">{{ n.badge }}</span> }
               </button>
             }
           </nav>
           <div class="pf-sidefoot">
             <button class="pf-navitem" (click)="toggleCollapse()" title="Réduire">
               <span class="pf-navic"><nv-icon name="chevron" [size]="20" [rotate]="collapsed() ? 0 : 180"/></span>
-              @if (!collapsed()) { <span>Réduire</span> }
+              <span class="pf-collapsible" [class.is-hidden]="collapsed()">Réduire</span>
             </button>
             <button class="pf-navitem" (click)="exit()" title="Quitter">
               <span class="pf-navic"><nv-icon name="logout" [size]="20"/></span>
-              @if (!collapsed()) { <span>Quitter la plateforme</span> }
+              <span class="pf-collapsible" [class.is-hidden]="collapsed()">Quitter la plateforme</span>
             </button>
           </div>
         </aside>
@@ -37,15 +37,17 @@
           <header class="pf-top">
             <div class="pf-topsearch">
               <nv-icon name="search" [size]="18" color="var(--gray-text)"/>
-              <input placeholder="Rechercher un médicament, une officine…" [value]="globalQuery()" (input)="searchGlobal($event)" (blur)="closeGlobalSearch()"/>
-              @if (globalResults().length > 0) {
+              <input placeholder="Rechercher un médicament, une officine…" [value]="globalQuery()" (focus)="focusGlobalSearch()" (input)="searchGlobal($event)" (blur)="closeGlobalSearch()"/>
+              @if (searchFocused() && (searchLoading() || globalResults().length > 0 || globalQuery().trim().length >= 2)) {
                 <div class="pf-global-results" (mousedown)="$event.preventDefault()">
+                  @if (searchLoading()) { <div class="pf-global-state">Recherche en cours…</div> }
                   @for (result of globalResults(); track result.type + result.id) {
                     <button type="button" (click)="openGlobalResult(result)">
                       <span>{{ result.type === 'medicine' ? 'Médicament' : 'Officine' }}</span>
                       <strong>{{ result.label }}</strong>
                     </button>
                   }
+                  @if (!searchLoading() && globalResults().length === 0) { <div class="pf-global-state">Aucun médicament ou officine trouvé.</div> }
                 </div>
               }
             </div>

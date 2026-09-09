@@ -6,7 +6,7 @@
             <pf-stat icon="alert" tone="red" label="Alertes internes actives" [value]="alertes().length"/>
             <pf-stat icon="shield" tone="amber" label="Médicaments critiques suivis" [value]="critMeds().length"/>
             <pf-stat icon="link" tone="green" label="Partenaires connectés" [value]="activePartnerCount()"/>
-            <pf-stat icon="clock" tone="blue" label="Délai moyen de réponse" value="42 min"/>
+            <pf-stat icon="clock" tone="blue" label="Délai moyen de réponse" value="—"/>
           </div>
           <div class="pf-cols">
             <pf-card title="Alertes internes par service" sub="Stocks sous tension">
@@ -56,7 +56,7 @@
                   <p class="muted" style="font-size:13.5px;margin-top:4px">Signalée {{ a.quand }} · transmise au réseau partenaires</p>
                 </div>
                 <div class="pf-li-act">
-                  <button class="btn btn-outline btn-sm" (click)="askRestock()">Demander réappro.</button>
+                  <button class="btn btn-outline btn-sm" (click)="askRestock(a)">Demander réappro.</button>
                   <button class="btn btn-green btn-sm" (click)="resolve(a.id)">Marquer résolu</button>
                 </div>
               </div>

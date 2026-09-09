@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiRegionalDemand, ApiZone, DistributorAlertsResponse, ShortageAlert } from '../../interfaces/api';
-import { DemandeReg, ZoneInfo, ZoneLevel } from '../../interfaces/models';
+import { DemandeReg, ZoneInfo, ZoneLevel, DeliveryRow } from '../../interfaces/models';
 import { AuthService } from '../auth/auth';
 
 /** Coordonnées (% sur la carte) des principales villes du Sénégal. */
@@ -30,6 +30,13 @@ export class DistributorService {
   private readonly base = environment.apiUrl;
 
   private readonly auth = inject(AuthService);
+
+  dashboard(): Observable<any> {
+    return this.http.get<{ data: any }>(`${this.base}/distributor/dashboard`).pipe(
+      map(r => r.data ?? {}),
+      catchError(() => of({})),
+    );
+  }
 
   /** GET /distributor/alerts — ruptures signalées par les officines. */
   alerts(): Observable<ShortageAlert[]> {
@@ -61,21 +68,21 @@ export class DistributorService {
   // --- API LIVRAISONS (DIS-006 à DIS-010) ---
 
   /** GET /distributor/deliveries */
-  deliveries(): Observable<any[]> {
+  deliveries(): Observable<DeliveryRow[]> {
     return this.http.get<{ data: any[] }>(`${this.base}/distributor/deliveries`).pipe(
-      map(r => r.data ?? []),
+      map(r => (r.data ?? []).map(toDeliveryRow)),
       catchError(() => of([])),
     );
   }
 
   /** POST /distributor/deliveries */
   createDelivery(zone: string, med: string, qty: number, date: string): Observable<unknown> {
-    return this.http.post(`${this.base}/distributor/deliveries`, { zone, medicine: med, qty, date });
+    return this.http.post(`${this.base}/distributor/deliveries`, { zone, medicine: med, quantity: qty, delivery_date: date });
   }
 
   /** PUT /distributor/deliveries/{id} */
   updateDelivery(id: string, qty: number, date: string): Observable<unknown> {
-    return this.http.put(`${this.base}/distributor/deliveries/${id}`, { qty, date });
+    return this.http.put(`${this.base}/distributor/deliveries/${id}`, { quantity: qty, delivery_date: date });
   }
 
   /** POST /distributor/deliveries/{id}/start */
@@ -83,9 +90,10 @@ export class DistributorService {
     return this.http.post(`${this.base}/distributor/deliveries/${id}/start`, {});
   }
 
-  /** POST /distributor/deliveries/{id}/deliver */
   changeDeliveryStatus(id: string, status: string): Observable<unknown> {
-    return this.http.post(`${this.base}/distributor/deliveries/${id}/${status === 'Livrée' ? 'deliver' : 'cancel'}`, {});
+    if (status === 'En transit') return this.startDelivery(id);
+    if (status === 'Livrée') return this.http.post(`${this.base}/distributor/deliveries/${id}/complete`, {});
+    return this.http.delete(`${this.base}/distributor/deliveries/${id}`);
   }
 
   /** GET /distributor/previsions — prévisions basées sur les données réelles. */
@@ -137,5 +145,16 @@ function toDemandeReg(d: ApiRegionalDemand): DemandeReg {
     vol: `~${Math.max(0, d.estimated_need)} u.`,
     tension: asZoneLevel(d.tension),
     officines: d.officines_count,
+  };
+}
+
+function toDeliveryRow(d: any): DeliveryRow {
+  return {
+    id: String(d.id),
+    zone: d.city ?? d.destination ?? '—',
+    med: d.medicine ?? '—',
+    qty: Number(d.quantity ?? 0),
+    date: d.delivery_date ?? '',
+    status: d.status_label ?? d.status ?? 'Planifiée',
   };
 }

@@ -22,7 +22,7 @@ export class PharmacyService {
 
   /** POST /pharmacy/stock/{stock}/restock */
   restock(stockId: number, quantity: number): Observable<unknown> {
-    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/restock`, { quantity });
+    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/restock`, { quantity_received: quantity });
   }
 
   /** GET /pharmacy/demandes */
@@ -40,13 +40,13 @@ export class PharmacyService {
 
   /** POST /pharmacy/demandes/{order}/orient */
   orientDemande(id: number, toStructureId: number): Observable<unknown> {
-    return this.http.post(`${this.base}/pharmacy/demandes/${id}/orient`, { to_structure_id: toStructureId });
+    return this.http.post(`${this.base}/pharmacy/demandes/${id}/orient`, { target_structure_id: toStructureId });
   }
 
   /** GET /pharmacy/stock/{stock}/movements — historique réel des mouvements. */
   stockMovements(stockId: number): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/pharmacy/stock/${stockId}/movements`).pipe(
-      map(r => r.data ?? []),
+    return this.http.get<{ data: any[]; medicine?: string }>(`${this.base}/pharmacy/stock/${stockId}/movements`).pipe(
+      map(r => (r.data ?? []).map(movement => ({ ...movement, medicine: r.medicine ?? movement.medicine }))),
       catchError(() => of([])),
     );
   }
@@ -59,6 +59,11 @@ export class PharmacyService {
     );
   }
 
+  /** POST /pharmacy/alerts/distributor */
+  alertDistributor(stockId: number, message?: string): Observable<unknown> {
+    return this.http.post(`${this.base}/pharmacy/alerts/distributor`, { stock_id: stockId, message });
+  }
+
   /** GET /pharmacy/dashboard — indicateurs tableau de bord. */
   dashboard(): Observable<any> {
     return this.http.get<{ data: any }>(`${this.base}/pharmacy/dashboard`).pipe(
@@ -69,17 +74,17 @@ export class PharmacyService {
 
   /** POST /pharmacy/stock/{stock}/external-sale — vente externe (PHA-010). */
   externalSale(stockId: number, qty: number, note: string): Observable<unknown> {
-    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/external-sale`, { qty, note });
+    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/external-sale`, { quantity_sold: qty, reason: note });
   }
 
   /** POST /pharmacy/stock/{stock}/inventory — ajustement d'inventaire (PHA-011). */
   inventoryAdjustment(stockId: number, newQty: number, reason: string): Observable<unknown> {
-    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/inventory`, { new_qty: newQty, reason });
+    return this.http.post(`${this.base}/pharmacy/stock/${stockId}/inventory`, { real_quantity: newQty, reason });
   }
 
   /** POST /pharmacy/stock — ajouter un nouveau stock. */
   addStock(medicineId: number, quantity: number, threshold: number): Observable<unknown> {
-    return this.http.post(`${this.base}/pharmacy/stock`, { medicine_id: medicineId, quantity, threshold });
+    return this.http.post(`${this.base}/pharmacy/stock`, { medicine_id: medicineId, quantity, threshold_qty: threshold });
   }
 
   /** PUT /pharmacy/stock/{stock} — modifier un stock existant. */
@@ -102,11 +107,11 @@ function toStockRow(s: ApiStockRow): StockRow {
   return {
     stockId: s.id,
     medId: s.medicine_id,
-    name: s.medicine ?? '—',
+    name: s.medicine_name ?? s.medicine ?? '—',
     sub,
     q: s.available,
     reserved: s.reserved,
-    seuil: s.threshold,
+    seuil: s.threshold_qty ?? s.threshold ?? 0,
     s: toStockState(s.status),
   };
 }
@@ -115,7 +120,7 @@ function toDemandeRow(d: ApiDemande): DemandeRow {
   return {
     id: d.id,
     medName: d.medicine ?? '—',
-    from: d.from ?? '—',
+    from: d.patient ?? d.from ?? '—',
     type: d.type,
     qty: d.qty,
     urgency: d.urgency,

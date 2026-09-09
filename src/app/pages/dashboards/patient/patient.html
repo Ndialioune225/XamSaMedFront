@@ -86,6 +86,6 @@
       @case ('phar') { <app-patient-pharmacies/> }
 
       @case ('profil') {
-        <app-simple-profile role="patient" title="Mon profil" name="Awa Ndiaye" sub="Patiente / Accompagnante" [fields]="profilFields"/>
+        <app-simple-profile role="patient" title="Mon profil" [name]="auth.user()?.name || 'Mon Profil'" sub="Patiente / Accompagnante" [fields]="profilFields()"/>
       }
     }

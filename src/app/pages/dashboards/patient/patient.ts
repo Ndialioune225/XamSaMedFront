@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, model, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -6,6 +6,7 @@ import { Tag } from '../../../components/tag/tag';
 import { PlatformState } from '../../../services/platform/platform';
 import { MedicineService } from '../../../services/medicines/medicines';
 import { OrderService } from '../../../services/orders/orders';
+import { AuthService } from '../../../services/auth/auth';
 import { Med, ResaRow } from '../../../interfaces/models';
 import { PatientResults } from '../patient-results/patient-results';
 import { PatientPharmacies } from '../patient-pharmacies/patient-pharmacies';
@@ -34,12 +35,17 @@ export class PatientDash {
   readonly resas = signal<ResaRow[]>([]);
 
   readonly suggestions = ['Morphine', 'Insuline Glargine', 'Paracétamol', 'Ventoline', 'Amlodipine'];
-  readonly profilFields: readonly [string, string][] = [
-    ['Téléphone', '+221 77 123 45 67'],
-    ['Ville', 'Dakar — Plateau'],
-    ['Notifications', 'Activées (rupture & disponibilité)'],
-    ['Pharmacie favorite', 'Pharmacie Centrale'],
-  ];
+  protected readonly auth = inject(AuthService);
+
+  readonly profilFields = computed<readonly [string, string][]>(() => {
+    const u = this.auth.user();
+    if (!u) return [];
+    return [
+      ['Téléphone', u.phone || '+221 77 000 00 00'],
+      ['Email', u.email || 'Non renseigné'],
+      ['Notifications', 'Activées (rupture & disponibilité)'],
+    ];
+  });
 
   constructor() { this.loadResas(); }
 
