@@ -90,6 +90,8 @@ export class AppShell {
     const role = this.role();
     const notification = this.notifs()[index];
     if (role && notification) {
+      // Notification persistée → marquer lue côté serveur.
+      if (notification.id) this.notificationService.markRead(notification.id).subscribe({ error: () => { /* ignore */ } });
       this.dismissedNotifications.update(items => {
         const next = new Set(items);
         next.add(`${role}:${notification.t}:${notification.d}`);

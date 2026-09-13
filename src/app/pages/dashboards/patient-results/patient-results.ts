@@ -21,6 +21,7 @@ export class PatientResults {
   readonly med = input.required<Med>();
   readonly back = output<void>();
   readonly reserve = output<number>(); // émet l'id de structure (officine)
+  readonly groupedSearch = output<void>(); // demande de recherche groupée (aucune dispo)
 
   readonly rows = signal<AvailabilityRow[]>([]);
   readonly loading = signal(true);

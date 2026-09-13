@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, finalize, tap } from 'rxjs';
+import { Observable, finalize, map, tap } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { PlatformState } from '../platform/platform';
@@ -51,6 +51,33 @@ export class AuthService {
       this.persistUser(user);
       this.platform.setRole(ROLE_MAP[user.role]);
     }));
+  }
+
+  /** PUT /me → met à jour le profil et rafraîchit la session locale. */
+  updateProfile(payload: { name?: string; phone?: string; email?: string }): Observable<ApiUser> {
+    return this.http.put<{ status: string; user: ApiUser }>(`${this.base}/me`, payload).pipe(
+      map(r => r.user),
+      tap(user => { this.user.set(user); this.persistUser(user); }),
+    );
+  }
+
+  /** PUT /me/password → change le mot de passe (vérifie l'actuel côté serveur). */
+  updatePassword(currentPassword: string, password: string): Observable<unknown> {
+    return this.http.put(`${this.base}/me/password`, {
+      current_password: currentPassword,
+      password,
+      password_confirmation: password,
+    });
+  }
+
+  /** POST /forgot-password → envoie un code de réinitialisation. */
+  forgotPassword(email: string): Observable<{ status: string; message: string; debug_code?: string }> {
+    return this.http.post<{ status: string; message: string; debug_code?: string }>(`${this.base}/forgot-password`, { email });
+  }
+
+  /** POST /reset-password → réinitialise le mot de passe avec le code reçu. */
+  resetPassword(email: string, token: string, password: string): Observable<unknown> {
+    return this.http.post(`${this.base}/reset-password`, { email, token, password, password_confirmation: password });
   }
 
   /** POST /logout → révoque le token côté serveur puis nettoie le client. */

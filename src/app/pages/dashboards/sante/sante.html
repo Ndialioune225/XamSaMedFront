@@ -1,3 +1,6 @@
+    @if (loading()) {
+      <div class="pf-loader"><span class="pf-spin"></span> Chargement des données…</div>
+    } @else {
     @switch (section()) {
       @case ('home') {
         <div>
@@ -117,6 +120,57 @@
           </pf-card>
         </div>
       }
+
+      @case ('users') {
+        <div>
+          <pf-page-head title="Gestion des utilisateurs" sub="Comptes de la plateforme nationale.">
+            <button actions class="btn btn-green btn-sm" (click)="userModal.set(true)"><nv-icon name="user" [size]="16"/> Nouvel utilisateur</button>
+          </pf-page-head>
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Structure</th><th></th></tr></thead>
+              <tbody>
+                @for (u of users(); track u.id) {
+                  <tr>
+                    <td><div class="pf-medname">{{ u.name }}</div></td>
+                    <td class="muted">{{ u.email }}</td>
+                    <td><span class="chip chip-blue">{{ u.role }}</span></td>
+                    <td class="muted">{{ u.structure?.name || '—' }}</td>
+                    <td style="text-align:right"><button class="btn btn-ghost btn-sm" style="color:var(--red)" (click)="deleteUser(u.id)">Désactiver</button></td>
+                  </tr>
+                }
+                @if (users().length === 0) { <tr><td colspan="5" class="muted" style="text-align:center;padding:16px 0">Aucun utilisateur.</td></tr> }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
+
+      @case ('structures') {
+        <div>
+          <pf-page-head title="Gestion des structures" sub="Officines, hôpitaux et distributeurs enregistrés.">
+            <button actions class="btn btn-green btn-sm" (click)="structureModal.set(true)"><nv-icon name="hospital" [size]="16"/> Nouvelle structure</button>
+          </pf-page-head>
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>Nom</th><th>Type</th><th>Ville</th><th>Téléphone</th><th></th></tr></thead>
+              <tbody>
+                @for (s of structures(); track s.id) {
+                  <tr>
+                    <td><div class="pf-medname">{{ s.name }}</div></td>
+                    <td><span class="chip">{{ s.type }}</span></td>
+                    <td class="muted">{{ s.city || '—' }}</td>
+                    <td class="muted">{{ s.phone || '—' }}</td>
+                    <td style="text-align:right"><button class="btn btn-ghost btn-sm" style="color:var(--red)" (click)="deleteStructure(s.id)">Désactiver</button></td>
+                  </tr>
+                }
+                @if (structures().length === 0) { <tr><td colspan="5" class="muted" style="text-align:center;padding:16px 0">Aucune structure.</td></tr> }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
+    }
     }
 
     <!-- Modals -->
@@ -147,6 +201,74 @@
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="generateModal.set(false)">Annuler</button>
             <button type="submit" class="btn btn-green btn-sm">Générer</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (userModal()) {
+      <div class="pf-modal-overlay" (click)="userModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitUser(uName.value, uEmail.value, uRole.value, uPhone.value, uStruct.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Nouvel utilisateur</h3>
+            <button type="button" class="pf-modal-close" (click)="userModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Nom *</label><input #uName required placeholder="Nom complet"/></div>
+            <div class="s-field" style="margin:0"><label>Email *</label><input #uEmail required type="email" placeholder="email@exemple.sn"/></div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Rôle *</label>
+                <select #uRole required>
+                  <option value="patient">Patient</option>
+                  <option value="pharmacy_user">Pharmacien</option>
+                  <option value="hospital_user">Hôpital</option>
+                  <option value="distributor_user">Distributeur</option>
+                  <option value="admin">Administrateur</option>
+                </select>
+              </div>
+              <div class="s-field" style="margin:0"><label>Téléphone</label><input #uPhone placeholder="+221…"/></div>
+            </div>
+            <div class="s-field" style="margin:0"><label>Structure liée (ID, optionnel)</label>
+              <select #uStruct>
+                <option value="">Aucune</option>
+                @for (s of structures(); track s.id) { <option [value]="s.id">{{ s.name }} ({{ s.type }})</option> }
+              </select>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="userModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Créer</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (structureModal()) {
+      <div class="pf-modal-overlay" (click)="structureModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitStructure(stName.value, stType.value, stCity.value, stPhone.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Nouvelle structure</h3>
+            <button type="button" class="pf-modal-close" (click)="structureModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Nom *</label><input #stName required placeholder="Ex : Pharmacie du Centre"/></div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Type *</label>
+                <select #stType required>
+                  <option value="pharmacy">Pharmacie</option>
+                  <option value="hospital">Hôpital</option>
+                  <option value="distributor">Distributeur</option>
+                  <option value="pna">PNA</option>
+                  <option value="pra">PRA</option>
+                </select>
+              </div>
+              <div class="s-field" style="margin:0"><label>Ville</label><input #stCity placeholder="Dakar"/></div>
+            </div>
+            <div class="s-field" style="margin:0"><label>Téléphone</label><input #stPhone placeholder="+221…"/></div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="structureModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Créer</button>
           </div>
         </form>
       </div>

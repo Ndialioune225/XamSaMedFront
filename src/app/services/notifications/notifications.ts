@@ -1,23 +1,67 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { RoleId, Notif } from '../../interfaces/models';
+import { environment } from '../../../environments/environment';
+import { RoleId, Notif, NotifKind } from '../../interfaces/models';
 import { OrderService } from '../orders/orders';
 import { PharmacyService } from '../pharmacy/pharmacy';
 import { DistributorService } from '../distributor/distributor';
 import { HospitalService } from '../hospital/hospital';
 import { PublicHealthService } from '../public-health/public-health';
 
-/** Notifications construites à partir des données API du rôle connecté. */
+/**
+ * Notifications du rôle connecté : fusionne les notifications persistées en base
+ * (événements réels — POST côté backend) avec des notifications dérivées en
+ * direct des données métier (alertes, demandes, réservations).
+ */
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
+  private readonly http = inject(HttpClient);
+  private readonly base = environment.apiUrl;
   private readonly orders = inject(OrderService);
   private readonly pharmacy = inject(PharmacyService);
   private readonly distributor = inject(DistributorService);
   private readonly hospital = inject(HospitalService);
   private readonly publicHealth = inject(PublicHealthService);
 
+  /** Notifications persistées non lues (table notifications). */
+  persisted(): Observable<Notif[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/notifications`).pipe(
+      map(r => (r.data ?? [])
+        .filter(n => !n.read)
+        .map(n => ({
+          id: n.id,
+          read: n.read,
+          icon: n.payload?.icon ?? 'bell',
+          s: (n.payload?.tone ?? 'info') as NotifKind,
+          t: n.payload?.title ?? 'Notification',
+          d: n.payload?.desc ?? '',
+          target: n.payload?.target,
+        } as Notif))),
+      catchError(() => of([])),
+    );
+  }
+
+  /** POST /notifications/{id}/read */
+  markRead(id: number): Observable<unknown> {
+    return this.http.post(`${this.base}/notifications/${id}/read`, {});
+  }
+
+  /** POST /notifications/read-all */
+  markAllRead(): Observable<unknown> {
+    return this.http.post(`${this.base}/notifications/read-all`, {});
+  }
+
+  /** Flux complet affiché dans la cloche : persistées d'abord, puis dérivées. */
   load(role: RoleId): Observable<Notif[]> {
+    return forkJoin({ persisted: this.persisted(), derived: this.derived(role) }).pipe(
+      map(({ persisted, derived }) => [...persisted, ...derived]),
+      catchError(() => this.derived(role)),
+    );
+  }
+
+  private derived(role: RoleId): Observable<Notif[]> {
     switch (role) {
       case 'patient':
         return this.orders.list().pipe(map(rows => rows.filter(row => row.s !== 'out').slice(0, 5).map(row => ({

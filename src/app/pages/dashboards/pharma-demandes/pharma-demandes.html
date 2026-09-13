@@ -29,20 +29,37 @@
             </div>
             @if (orient() !== d.id) {
               <div class="pf-li-act">
-                <button class="btn btn-outline btn-sm" (click)="orient.set(d.id)">Rupture — orienter</button>
-                <button class="btn btn-green btn-sm" (click)="accept(d.id)">Accepter</button>
+                @switch (d.status) {
+                  @case ('pending') {
+                    <button class="btn btn-outline btn-sm" (click)="startOrient(d)">Rupture — orienter</button>
+                    <button class="btn btn-green btn-sm" (click)="accept(d.id)">Accepter</button>
+                  }
+                  @case ('confirmed') {
+                    <button class="btn btn-green btn-sm" (click)="collect(d.id)"><nv-icon name="checkC" [size]="15"/> Marquer retiré</button>
+                  }
+                  @default {
+                    <span class="chip">{{ statusLabel(d.status) }}</span>
+                  }
+                }
               </div>
             }
           </div>
           @if (orient() === d.id) {
             <div style="margin-top:16px;border-top:1px solid var(--gray-line);padding-top:14px">
-              <p style="font-family:'Montserrat';font-weight:700;color:var(--blue);font-size:14px;margin-bottom:10px">Orienter vers une autre officine disposant du médicament :</p>
-              @for (p of orientOptions(); track p.id) {
+              <p style="font-family:'Montserrat';font-weight:700;color:var(--blue);font-size:14px;margin-bottom:10px">Officines disposant de {{ d.medName }} ({{ d.qty }} u. demandées) :</p>
+              @if (orientLoading()) {
+                <div class="muted" style="padding:10px 0"><span class="pf-spin"></span> Vérification des stocks…</div>
+              }
+              @for (p of orientOptions(); track p.structureId) {
                 <div class="pf-li" style="padding:10px 0">
                   <span class="pf-liic green"><nv-icon name="pin" [size]="16"/></span>
-                  <div class="pf-libody"><strong>{{ p.nom }}</strong><span>{{ p.ville }} · {{ p.dist }} · {{ p.tel }}</span></div>
-                  <button class="btn btn-green btn-sm" (click)="doOrient(d.id, p)">Orienter ici</button>
+                  <div class="pf-libody"><strong>{{ p.pharmacy }}</strong><span>{{ p.city }} · {{ p.dist }} · {{ p.phone }}</span></div>
+                  <pf-tag [s]="p.s">{{ p.available }} u. dispo</pf-tag>
+                  <button class="btn btn-green btn-sm" (click)="doOrient(d, p)">Orienter ici</button>
                 </div>
+              }
+              @if (!orientLoading() && orientOptions().length === 0) {
+                <div class="muted" style="padding:10px 0">Aucune autre officine ne dispose de ce médicament en quantité suffisante. Pensez à demander un réapprovisionnement à vos fournisseurs.</div>
               }
               <button class="btn btn-ghost btn-sm" (click)="orient.set(null)" style="margin-top:6px">Annuler</button>
             </div>

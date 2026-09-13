@@ -12,6 +12,10 @@
               <strong style="font-family:'Montserrat';font-size:14px;color:var(--blue);text-align:right">{{ f[1] }}</strong>
             </div>
           }
+          <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+            <button class="btn btn-green btn-sm" (click)="editModal.set(true)"><nv-icon name="user" [size]="15"/> Modifier mon profil</button>
+            <button class="btn btn-outline btn-sm" (click)="pwdModal.set(true)"><nv-icon name="shield" [size]="15"/> Mot de passe</button>
+          </div>
         </pf-card>
         <pf-card title="Accès rapide" sub="QR code de votre espace">
           <div class="pf-qr">
@@ -23,4 +27,44 @@
           </div>
         </pf-card>
       </div>
+
+      @if (editModal()) {
+        <div class="pf-modal-overlay" (click)="editModal.set(false)">
+          <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitProfile(eName.value, ePhone.value, eEmail.value); $event.preventDefault()">
+            <div class="pf-modal-head">
+              <h3>Modifier mon profil</h3>
+              <button type="button" class="pf-modal-close" (click)="editModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+            </div>
+            <div class="pf-modal-body">
+              <div class="s-field" style="margin:0"><label>Nom</label><input #eName [value]="auth.user()?.name || ''"/></div>
+              <div class="s-field" style="margin:0"><label>Téléphone</label><input #ePhone [value]="auth.user()?.phone || ''"/></div>
+              <div class="s-field" style="margin:0"><label>Email</label><input #eEmail type="email" [value]="auth.user()?.email || ''"/></div>
+            </div>
+            <div class="pf-modal-foot">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="editModal.set(false)">Annuler</button>
+              <button type="submit" class="btn btn-green btn-sm">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+      }
+
+      @if (pwdModal()) {
+        <div class="pf-modal-overlay" (click)="pwdModal.set(false)">
+          <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitPassword(pCur.value, pNew.value, pConf.value); $event.preventDefault()">
+            <div class="pf-modal-head">
+              <h3>Changer le mot de passe</h3>
+              <button type="button" class="pf-modal-close" (click)="pwdModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+            </div>
+            <div class="pf-modal-body">
+              <div class="s-field" style="margin:0"><label>Mot de passe actuel *</label><input #pCur required type="password" autocomplete="current-password"/></div>
+              <div class="s-field" style="margin:0"><label>Nouveau mot de passe *</label><input #pNew required type="password" autocomplete="new-password" minlength="6"/></div>
+              <div class="s-field" style="margin:0"><label>Confirmer *</label><input #pConf required type="password" autocomplete="new-password"/></div>
+            </div>
+            <div class="pf-modal-foot">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="pwdModal.set(false)">Annuler</button>
+              <button type="submit" class="btn btn-green btn-sm">Changer</button>
+            </div>
+          </form>
+        </div>
+      }
     </div>

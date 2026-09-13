@@ -18,8 +18,15 @@
           </div>
         }
 
-        @if (!loading() && rows().length === 0) {
-          <div style="text-align:center;padding:20px;color:var(--gray-text)">Aucune officine ne référence ce médicament pour le moment.</div>
+        @if (!loading() && availableCount() === 0) {
+          <div class="pf-banner amber" style="margin-bottom:4px">
+            <span class="pf-bannic"><nv-icon name="search" [size]="22"/></span>
+            <div style="flex:1">
+              <strong>Aucune disponibilité publique</strong>
+              <p>Lancez une recherche groupée : les pharmacies de votre zone seront interrogées directement.</p>
+            </div>
+            <button class="btn btn-green btn-sm" (click)="groupedSearch.emit()"><nv-icon name="layers" [size]="15"/> Recherche groupée</button>
+          </div>
         }
 
         @if (rows().length > 0) {

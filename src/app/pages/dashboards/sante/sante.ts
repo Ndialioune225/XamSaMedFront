@@ -8,6 +8,7 @@ import { Tag } from '../../../components/tag/tag';
 import { ZoneMap } from '../../../components/zone-map/zone-map';
 import { PlatformState } from '../../../services/platform/platform';
 import { PublicHealthService } from '../../../services/public-health/public-health';
+import { AdminService } from '../../../services/admin/admin';
 import { ApiOverview } from '../../../interfaces/api';
 import { Tension, ZoneInfo } from '../../../interfaces/models';
 
@@ -26,8 +27,16 @@ type BarTone = 'green' | 'amber' | 'red' | 'blue';
 export class SanteDash {
   private readonly ph = inject(PublicHealthService);
   private readonly platform = inject(PlatformState);
+  private readonly admin = inject(AdminService);
 
   readonly section = model.required<string>();
+  readonly loading = signal(true);
+
+  // --- Administration ---
+  readonly users = signal<any[]>([]);
+  readonly structures = signal<any[]>([]);
+  readonly userModal = signal(false);
+  readonly structureModal = signal(false);
   readonly sel = signal<string | null>(null);
   readonly tension = signal<Tension[]>([]);
   readonly zones = signal<ZoneInfo[]>([]);
@@ -48,10 +57,52 @@ export class SanteDash {
   ]);
 
   constructor() {
-    this.ph.overview().subscribe({ next: o => this.overview.set(o), error: () => { /* ignore */ } });
+    this.ph.overview().subscribe({
+      next: o => { this.overview.set(o); this.loading.set(false); },
+      error: () => this.loading.set(false),
+    });
     this.ph.zones().subscribe({ next: z => this.zones.set(z), error: () => { /* ignore */ } });
     this.ph.tension().subscribe({ next: t => this.tension.set(t), error: () => { /* ignore */ } });
     this.loadReports();
+    this.loadUsers();
+    this.loadStructures();
+  }
+
+  // ── Administration : utilisateurs ──────────────────────────────
+  private loadUsers(): void {
+    this.admin.users().subscribe({ next: u => this.users.set(u), error: () => { /* ignore */ } });
+  }
+  submitUser(name: string, email: string, role: string, phone: string, structureId: string): void {
+    if (!name.trim() || !email.trim() || !role) { this.platform.notify('Nom, email et rôle requis', 'alert'); return; }
+    const structure_id = structureId ? Number(structureId) : null;
+    this.admin.createUser({ name: name.trim(), email: email.trim(), phone: phone.trim() || undefined, role, structure_id }).subscribe({
+      next: () => { this.platform.notify('Utilisateur créé (mot de passe envoyé par email)', 'ok'); this.userModal.set(false); this.loadUsers(); },
+      error: () => this.platform.notify('Échec de la création (email déjà utilisé ?)', 'alert'),
+    });
+  }
+  deleteUser(id: number): void {
+    this.admin.deleteUser(id).subscribe({
+      next: () => { this.platform.notify('Utilisateur désactivé', 'info'); this.loadUsers(); },
+      error: () => this.platform.notify('Échec de la suppression', 'alert'),
+    });
+  }
+
+  // ── Administration : structures ────────────────────────────────
+  private loadStructures(): void {
+    this.admin.structures().subscribe({ next: s => this.structures.set(s), error: () => { /* ignore */ } });
+  }
+  submitStructure(name: string, type: string, city: string, phone: string): void {
+    if (!name.trim() || !type) { this.platform.notify('Nom et type requis', 'alert'); return; }
+    this.admin.createStructure({ name: name.trim(), type, city: city.trim() || undefined, contact_phone: phone.trim() || undefined }).subscribe({
+      next: () => { this.platform.notify('Structure créée', 'ok'); this.structureModal.set(false); this.loadStructures(); },
+      error: () => this.platform.notify('Échec de la création', 'alert'),
+    });
+  }
+  deleteStructure(id: number): void {
+    this.admin.deleteStructure(id).subscribe({
+      next: () => { this.platform.notify('Structure désactivée', 'info'); this.loadStructures(); },
+      error: () => this.platform.notify('Échec de la désactivation', 'alert'),
+    });
   }
 
   tone(pct: number): BarTone { return pct > 70 ? 'red' : pct > 40 ? 'amber' : 'green'; }

@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiStructure } from '../../interfaces/api';
+import { ApiStructure, ApiSupplier } from '../../interfaces/api';
 import { Pharmacy } from '../../interfaces/models';
 
 const REF = { lat: 14.6928, lng: -17.4467 }; // Dakar Plateau — position patient de démo
@@ -45,6 +45,20 @@ export class StructureService {
   pharmacies(): Observable<Pharmacy[]> {
     return this.http.get<{ data: ApiStructure[] }>(`${this.base}/pharmacies`).pipe(
       map(r => r.data.map(toPharmacy)),
+      catchError(() => of([])),
+    );
+  }
+
+  /**
+   * GET /distributors?medicine_id= → fournisseurs (distributeurs privés + PRA)
+   * avec, pour le médicament donné, leur quantité disponible lue en base et le
+   * flag partenaire. Sert au choix « à qui envoyer la demande ».
+   */
+  suppliers(medicineId?: number | null): Observable<ApiSupplier[]> {
+    let params = new HttpParams();
+    if (medicineId) params = params.set('medicine_id', String(medicineId));
+    return this.http.get<{ data: ApiSupplier[] }>(`${this.base}/distributors`, { params }).pipe(
+      map(r => r.data ?? []),
       catchError(() => of([])),
     );
   }

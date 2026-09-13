@@ -45,6 +45,12 @@ export class LoginScreen {
   readonly error = signal<string | null>(null);
   readonly loading = signal(false);
 
+  // Flux « mot de passe oublié »
+  readonly mode = signal<'login' | 'forgot' | 'reset'>('login');
+  readonly info = signal<string | null>(null);
+  readonly resetCode = signal('');
+  readonly newPassword = signal('');
+
   readonly current = computed(() => roleById(this.role()));
 
   pick(id: RoleId): void {
@@ -72,6 +78,47 @@ export class LoginScreen {
 
   back(): void { this.router.navigateByUrl('/'); }
   firstWord(s: string): string { return s.split(' ')[0]; }
+
+  // --- Mot de passe oublié ---
+  setResetCode(e: Event): void { this.resetCode.set((e.target as HTMLInputElement).value); }
+  setNewPassword(e: Event): void { this.newPassword.set((e.target as HTMLInputElement).value); }
+  gotoForgot(): void { this.mode.set('forgot'); this.error.set(null); this.info.set(null); }
+  gotoLogin(): void { this.mode.set('login'); this.error.set(null); this.info.set(null); }
+
+  requestReset(): void {
+    if (this.loading()) return;
+    const email = this.email().trim();
+    if (!email) { this.error.set('Renseignez votre email.'); return; }
+    this.error.set(null); this.info.set(null); this.loading.set(true);
+    this.auth.forgotPassword(email).subscribe({
+      next: res => {
+        this.loading.set(false);
+        this.mode.set('reset');
+        this.info.set(res?.debug_code ? `Code de démonstration : ${res.debug_code}` : (res?.message ?? 'Code envoyé.'));
+      },
+      error: () => { this.loading.set(false); this.error.set('Échec de la demande. Réessayez.'); },
+    });
+  }
+
+  doReset(): void {
+    if (this.loading()) return;
+    const email = this.email().trim();
+    if (!this.resetCode().trim() || this.newPassword().length < 6) {
+      this.error.set('Code requis et nouveau mot de passe d\'au moins 6 caractères.');
+      return;
+    }
+    this.error.set(null); this.loading.set(true);
+    this.auth.resetPassword(email, this.resetCode().trim(), this.newPassword()).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.password.set(this.newPassword());
+        this.resetCode.set(''); this.newPassword.set('');
+        this.mode.set('login');
+        this.info.set('Mot de passe réinitialisé. Vous pouvez vous connecter.');
+      },
+      error: (err: HttpErrorResponse) => { this.loading.set(false); this.error.set(this.errorMessage(err)); },
+    });
+  }
 
   private errorMessage(err: HttpErrorResponse): string {
     if (err.status === 401) return 'Identifiants invalides.';

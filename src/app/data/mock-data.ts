@@ -63,14 +63,6 @@ export const DEMANDES: Demande[] = [
   { id: 'd3', med: 'm4', de: 'Patient · M. Diop', type: 'Patient', qte: '1 stylo', urgence: 'Élevé', quand: 'il y a 1 h', statut: 'vue' },
 ];
 
-// Demandes régionales (distributeur)
-export const DEMANDES_REG: DemandeReg[] = [
-  { id: 'r1', zone: 'Dakar', med: 'Morphine 10mg/ml', vol: '120 u.', tension: 'haute', officines: 8 },
-  { id: 'r2', zone: 'Thiès', med: 'Insuline Glargine', vol: '60 u.', tension: 'haute', officines: 5 },
-  { id: 'r3', zone: 'Saint-Louis', med: 'Amoxicilline 500mg', vol: '340 u.', tension: 'moyenne', officines: 11 },
-  { id: 'r4', zone: 'Ziguinchor', med: 'Salbutamol', vol: '90 u.', tension: 'basse', officines: 4 },
-];
-
 // Zones critiques (carte santé publique / distributeur)
 export const ZONES: ZoneInfo[] = [
   { nom: 'Dakar', x: 28, y: 34, niveau: 'crit', ruptures: 14 },
@@ -123,12 +115,15 @@ export const NAV: Record<RoleId, NavItem[]> = {
     { id: 'stock', label: 'Gestion de stock', icon: 'box' },
     { id: 'alert', label: 'Alertes de seuil', icon: 'alert', badge: 2 },
     { id: 'dem', label: 'Demandes ciblées', icon: 'mail', badge: 2 },
+    { id: 'ordo', label: 'Ordonnances', icon: 'doc' },
+    { id: 'grouped', label: 'Alertes groupées', icon: 'layers' },
     { id: 'history', label: 'Historique', icon: 'clock' },
     { id: 'profil', label: 'Officine', icon: 'pill' },
   ],
   distrib: [
     { id: 'home', label: 'Tableau de bord', icon: 'grid' },
     { id: 'reg', label: 'Demandes régionales', icon: 'layers', badge: 4 },
+    { id: 'inst', label: 'Institutionnel', icon: 'hospital' },
     { id: 'livraisons', label: 'Livraisons', icon: 'truck' },
     { id: 'zones', label: 'Zones critiques', icon: 'pin' },
     { id: 'prev', label: 'Prévisions', icon: 'trend' },
@@ -136,6 +131,7 @@ export const NAV: Record<RoleId, NavItem[]> = {
   hopital: [
     { id: 'home', label: 'Tableau de bord', icon: 'grid' },
     { id: 'alert', label: 'Alertes internes', icon: 'alert', badge: 3 },
+    { id: 'pra', label: 'Commandes PRA', icon: 'truck' },
     { id: 'history', label: 'Historique', icon: 'clock' },
     { id: 'res', label: 'Réseau partenaires', icon: 'link' },
     { id: 'crit', label: 'Médicaments critiques', icon: 'shield' },
@@ -145,6 +141,8 @@ export const NAV: Record<RoleId, NavItem[]> = {
     { id: 'zones', label: 'Zones en tension', icon: 'pin' },
     { id: 'tension', label: 'Médicaments en tension', icon: 'trend' },
     { id: 'rapport', label: 'Rapports', icon: 'doc' },
+    { id: 'users', label: 'Utilisateurs', icon: 'user' },
+    { id: 'structures', label: 'Structures', icon: 'hospital' },
   ],
 };
 

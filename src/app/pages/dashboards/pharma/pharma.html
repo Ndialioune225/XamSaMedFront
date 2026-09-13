@@ -1,3 +1,6 @@
+    @if (loading()) {
+      <div class="pf-loader"><span class="pf-spin"></span> Chargement des données…</div>
+    } @else {
     @switch (section()) {
       @case ('home') {
         <div>
@@ -93,7 +96,10 @@
                 <div class="pf-libody"><strong>{{ s.name }}</strong><span>{{ s.q }} unité(s) restantes · seuil fixé à {{ s.seuil }}</span></div>
                 <div class="pf-li-act" style="gap:8px">
                   <pf-tag [s]="s.s">{{ alertLabel(s.s) }}</pf-tag>
-                  <button class="btn btn-outline btn-sm" (click)="alertDistrib(s)">Alerter Distributeur</button>
+                  @if (alreadyAsked(s).size > 0) {
+                    <span class="chip chip-blue" title="Demande en attente chez {{ alreadyAsked(s).size }} fournisseur(s)"><nv-icon name="truck" [size]="13"/> {{ alreadyAsked(s).size }} demandé</span>
+                  }
+                  <button class="btn btn-outline btn-sm" (click)="alertDistrib(s)"><nv-icon name="truck" [size]="15"/> Demander aux fournisseurs</button>
                   <button class="btn btn-green btn-sm" (click)="restock(s)">Réapprov.</button>
                 </div>
               </div>
@@ -105,10 +111,46 @@
               </div>
             }
           </pf-card>
+
+          <pf-card title="Demandes de réapprovisionnement" sub="Suivi des demandes envoyées aux distributeurs et PRA">
+            <span right class="chip chip-blue">{{ pendingRequests().length }} en attente</span>
+            @for (r of restockRequests(); track r.id) {
+              <div class="pf-li">
+                <span class="pf-liic {{ r.status === 'resolved' ? 'green' : r.status === 'rejected' ? 'red' : 'amber' }}"><nv-icon name="truck" [size]="18"/></span>
+                <div class="pf-libody"><strong>{{ r.medicine }}</strong><span>{{ r.distributor }}{{ r.quantity ? ' · ' + r.quantity + ' u. demandées' : '' }}</span></div>
+                <pf-tag [s]="requestTag(r.status)">{{ requestStatusLabel(r) }}</pf-tag>
+              </div>
+            }
+            @if (restockRequests().length === 0) { <div class="muted" style="padding:14px 0">Aucune demande envoyée pour le moment.</div> }
+          </pf-card>
         </div>
       }
 
       @case ('dem') { <app-pharma-demandes [demandes]="demandes()" (changed)="reload()"/> }
+
+      @case ('grouped') {
+        <div>
+          <pf-page-head title="Alertes groupées" sub="Des patients cherchent un médicament dans votre zone — répondez sans exposer votre stock."/>
+          @if (groupedAlerts().length === 0) {
+            <pf-card><div style="text-align:center;padding:34px;color:var(--gray-text)"><nv-icon name="layers" [size]="34" color="var(--gray)"/><p style="margin-top:8px">Aucune alerte groupée en attente.</p></div></pf-card>
+          }
+          @for (a of groupedAlerts(); track a.response_id) {
+            <pf-card>
+              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                <span class="pf-liic amber" style="width:48px;height:48px"><nv-icon name="search" [size]="22"/></span>
+                <div style="flex:1;min-width:200px">
+                  <div class="pf-medname" style="font-size:16px">{{ a.medicine }}</div>
+                  <p class="muted" style="font-size:13.5px;margin-top:4px">{{ a.dosage }} · {{ a.form }} — un patient recherche ce médicament</p>
+                </div>
+                <div class="pf-li-act">
+                  <button class="btn btn-outline btn-sm" (click)="respondGrouped(a, false)">Je n'ai pas</button>
+                  <button class="btn btn-green btn-sm" (click)="respondGrouped(a, true)"><nv-icon name="checkC" [size]="15"/> J'ai en stock</button>
+                </div>
+              </div>
+            </pf-card>
+          }
+        </div>
+      }
 
       @case ('profil') {
         <app-simple-profile role="pharma" title="Mon officine" [name]="'Pharmacie ' + (profilFields()[3]?.[1] || '')" sub="Officine connectée" [fields]="profilFields()"/>
@@ -139,6 +181,36 @@
           </pf-card>
         </div>
       }
+
+      @case ('ordo') {
+        <div>
+          <pf-page-head title="Ordonnances reçues" sub="Ordonnances numériques envoyées par les patients — à lire et à traiter."/>
+          @if (prescriptions().length === 0) {
+            <pf-card><div style="text-align:center;padding:34px;color:var(--gray-text)"><nv-icon name="doc" [size]="34" color="var(--gray)"/><p style="margin-top:8px">Aucune ordonnance reçue.</p></div></pf-card>
+          }
+          @for (o of prescriptions(); track o.id) {
+            <pf-card>
+              <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+                <span class="pf-liic blue" style="width:48px;height:48px"><nv-icon name="doc" [size]="22"/></span>
+                <div style="flex:1;min-width:200px">
+                  <div class="pf-medname" style="font-size:16px">{{ o.patient || 'Patient' }}</div>
+                  <p class="muted" style="font-size:13.5px;margin-top:4px">{{ o.phone || '—' }} · {{ o.notes || 'Sans note' }}</p>
+                </div>
+                <div class="pf-li-act">
+                  @if (o.status === 'pending') {
+                    <button class="btn btn-ghost btn-sm" (click)="downloadOrdo(o)"><nv-icon name="doc" [size]="15"/> Voir</button>
+                    <button class="btn btn-outline btn-sm" (click)="rejectOrdo(o)">Rejeter</button>
+                    <button class="btn btn-green btn-sm" (click)="openProcess(o)">Traiter</button>
+                  } @else {
+                    <span class="chip" [class.chip-green]="o.status === 'confirmed' || o.status === 'collected'">{{ o.status }}</span>
+                  }
+                </div>
+              </div>
+            </pf-card>
+          }
+        </div>
+      }
+    }
     }
 
     <!-- Modals -->
@@ -236,6 +308,86 @@
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="adjustModal.set(null)">Annuler</button>
             <button type="submit" class="btn btn-green btn-sm">Ajuster</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (supplierModal(); as s) {
+      <div class="pf-modal-overlay" (click)="supplierModal.set(null)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitSupplierRequest(dQty.value, dMsg.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Demander un réapprovisionnement</h3>
+            <button type="button" class="pf-modal-close" (click)="supplierModal.set(null)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+              <span class="pf-liic {{ s.s === 'low' ? 'amber' : 'red' }}"><nv-icon name="alert" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ s.name }}</strong><span>{{ s.q }} u. disponibles · seuil {{ s.seuil }}</span></div>
+            </div>
+
+            <div class="s-field" style="margin:0">
+              <label>Fournisseurs à solliciter * <span class="muted" style="font-weight:400">— stock lu chez chaque fournisseur</span></label>
+              @if (suppliersLoading()) {
+                <div class="muted" style="padding:10px 0"><span class="pf-spin"></span> Recherche des fournisseurs…</div>
+              }
+              @for (d of suppliers(); track d.id) {
+                <label class="pf-li" style="padding:10px 0;cursor:pointer">
+                  <input type="checkbox" [checked]="selectedSuppliers().has(d.id)" (change)="toggleSupplier(d.id)" [disabled]="alreadyAsked(s).has(d.id)" style="width:18px;height:18px;accent-color:var(--green)"/>
+                  <span class="pf-liic {{ d.has_stock ? 'green' : '' }}"><nv-icon name="truck" [size]="16"/></span>
+                  <div class="pf-libody">
+                    <strong>{{ d.name }} @if (d.is_partner) { <span class="chip chip-blue" style="margin-left:6px">Partenaire</span> }</strong>
+                    <span>{{ d.kind }} · {{ d.city }}</span>
+                  </div>
+                  @if (alreadyAsked(s).has(d.id)) {
+                    <span class="chip chip-amber">Déjà demandé</span>
+                  } @else if (d.has_stock) {
+                    <pf-tag s="ok">{{ d.available }} u. dispo</pf-tag>
+                  } @else {
+                    <pf-tag s="out">Non disponible</pf-tag>
+                  }
+                </label>
+              }
+              @if (!suppliersLoading() && suppliers().length === 0) { <div class="muted" style="padding:10px 0">Aucun fournisseur enregistré.</div> }
+            </div>
+
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Quantité souhaitée *</label><input #dQty required type="number" min="1" [value]="suggestedQty(s)"/></div>
+              <div class="s-field" style="margin:0"><label>Message</label><input #dMsg placeholder="Ex : rupture depuis 3 jours"/></div>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="supplierModal.set(null)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm" [disabled]="sending() || selectedSuppliers().size === 0">
+              <nv-icon name="send" [size]="15"/> Envoyer à {{ selectedSuppliers().size }} fournisseur(s)
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (processModal(); as o) {
+      <div class="pf-modal-overlay" (click)="processModal.set(null)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitProcess(pMed.value, pQty.value, pPrice.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Traiter l'ordonnance</h3>
+            <button type="button" class="pf-modal-close" (click)="processModal.set(null)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+              <span class="pf-liic blue"><nv-icon name="user" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ o.patient }}</strong><span>{{ o.notes || 'Sans note' }}</span></div>
+            </div>
+            <div class="s-field" style="margin:0"><label>Médicament *</label><input #pMed required placeholder="Nom du médicament (catalogue)"/></div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Quantité *</label><input #pQty required type="number" min="1" placeholder="Ex : 2"/></div>
+              <div class="s-field" style="margin:0"><label>Prix (FCFA)</label><input #pPrice type="number" min="0" placeholder="Optionnel"/></div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-top:4px" (click)="downloadOrdo(o)"><nv-icon name="doc" [size]="15"/> Voir l'ordonnance</button>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="processModal.set(null)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Valider la commande</button>
           </div>
         </form>
       </div>

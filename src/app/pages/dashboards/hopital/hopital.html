@@ -1,3 +1,6 @@
+    @if (loading()) {
+      <div class="pf-loader"><span class="pf-spin"></span> Chargement des données…</div>
+    } @else {
     @switch (section()) {
       @case ('home') {
         <div>
@@ -53,10 +56,10 @@
                     <span class="chip chip-blue">{{ a.service }}</span>
                     <pf-tag [s]="ntag(a.niveau)">{{ a.reste }} restant</pf-tag>
                   </div>
-                  <p class="muted" style="font-size:13.5px;margin-top:4px">Signalée {{ a.quand }} · transmise au réseau partenaires</p>
+                  <p class="muted" style="font-size:13.5px;margin-top:4px">Signalée {{ a.quand }}@if (alreadyAsked(a).size > 0) { · <span style="color:var(--blue)">réappro. demandé à {{ alreadyAsked(a).size }} fournisseur(s)</span> }</p>
                 </div>
                 <div class="pf-li-act">
-                  <button class="btn btn-outline btn-sm" (click)="askRestock(a)">Demander réappro.</button>
+                  <button class="btn btn-outline btn-sm" (click)="askRestock(a)"><nv-icon name="truck" [size]="15"/> Demander réappro.</button>
                   <button class="btn btn-green btn-sm" (click)="resolve(a.id)">Marquer résolu</button>
                 </div>
               </div>
@@ -70,6 +73,18 @@
               </div>
             </pf-card>
           }
+
+          <pf-card title="Demandes de réapprovisionnement" sub="Suivi des demandes envoyées aux distributeurs et à la PRA">
+            <span right class="chip chip-blue">{{ pendingRequests().length }} en attente</span>
+            @for (r of restockRequests(); track r.id) {
+              <div class="pf-li">
+                <span class="pf-liic {{ r.status === 'resolved' ? 'green' : r.status === 'rejected' ? 'red' : 'amber' }}"><nv-icon name="truck" [size]="18"/></span>
+                <div class="pf-libody"><strong>{{ r.medicine }}</strong><span>{{ r.distributor }}{{ r.service ? ' · ' + r.service : '' }}{{ r.quantity ? ' · ' + r.quantity + ' u.' : '' }}</span></div>
+                <pf-tag [s]="requestTag(r.status)">{{ requestStatusLabel(r) }}</pf-tag>
+              </div>
+            }
+            @if (restockRequests().length === 0) { <div class="muted" style="padding:14px 0">Aucune demande envoyée pour le moment.</div> }
+          </pf-card>
         </div>
       }
 
@@ -121,6 +136,11 @@
                   <span class="pf-liic green"><nv-icon name="pill" [size]="18"/></span>
                   <div class="pf-libody"><strong>{{ p.partner }}</strong><span>{{ p.city }} · {{ p.phone }}</span></div>
                   <span class="chip" [class.chip-green]="p.status === 'active'" [class.chip-amber]="p.status !== 'active'">{{ p.status === 'active' ? 'Actif' : 'En attente' }}</span>
+                  @if (p.can_respond) {
+                    <button class="btn btn-green btn-sm" (click)="acceptPartner(p.id)">Accepter</button>
+                    <button class="btn btn-ghost btn-sm" (click)="rejectPartner(p.id)">Rejeter</button>
+                  }
+                  <button class="btn btn-ghost btn-sm" style="color:var(--red)" title="Retirer" (click)="removePartner(p.id)"><nv-icon name="x" [size]="14"/></button>
                 </div>
               }
               @if (pharmacyPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucune pharmacie partenaire.</div> }
@@ -131,6 +151,11 @@
                   <span class="pf-liic"><nv-icon name="truck" [size]="18"/></span>
                   <div class="pf-libody"><strong>{{ d.partner }}</strong><span>{{ d.city }} · Distributeur</span></div>
                   <span class="chip" [class.chip-green]="d.status === 'active'" [class.chip-amber]="d.status !== 'active'">{{ d.status === 'active' ? 'Actif' : 'En attente' }}</span>
+                  @if (d.can_respond) {
+                    <button class="btn btn-green btn-sm" (click)="acceptPartner(d.id)">Accepter</button>
+                    <button class="btn btn-ghost btn-sm" (click)="rejectPartner(d.id)">Rejeter</button>
+                  }
+                  <button class="btn btn-ghost btn-sm" style="color:var(--red)" title="Retirer" (click)="removePartner(d.id)"><nv-icon name="x" [size]="14"/></button>
                 </div>
               }
               @if (distributorPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucun distributeur enregistré.</div> }
@@ -160,6 +185,32 @@
           </pf-card>
         </div>
       }
+
+      @case ('pra') {
+        <div>
+          <pf-page-head title="Commandes PRA" sub="Commandes institutionnelles vers votre Pharmacie Régionale d'Approvisionnement.">
+            <button actions class="btn btn-green btn-sm" (click)="praModal.set(true)"><nv-icon name="truck" [size]="16"/> Nouvelle commande</button>
+          </pf-page-head>
+          <pf-card>
+            <table class="pf-table">
+              <thead><tr><th>PRA</th><th>Médicament</th><th>Quantité</th><th>Urgence</th><th>État</th></tr></thead>
+              <tbody>
+                @for (o of praOrders(); track o.id) {
+                  <tr>
+                    <td class="muted">{{ o.pra || '—' }}</td>
+                    <td><div class="pf-medname">{{ o.medicine }}</div></td>
+                    <td><strong style="font-family:'Montserrat';color:var(--blue)">{{ o.quantity }}</strong></td>
+                    <td><pf-tag [s]="praUrgencyTag(o.urgency)">{{ o.urgency }}</pf-tag></td>
+                    <td><span class="chip" [class.chip-green]="o.status === 'resolved' || o.status === 'received'" [class.chip-amber]="o.status === 'pending'" [class.chip-red]="o.status === 'rejected'">{{ praStatusLabel(o.status) }}{{ o.delivery_date ? ' · ' + o.delivery_date : '' }}</span></td>
+                  </tr>
+                }
+                @if (praOrders().length === 0) { <tr><td colspan="5" class="muted" style="text-align:center;padding:16px 0">Aucune commande institutionnelle.</td></tr> }
+              </tbody>
+            </table>
+          </pf-card>
+        </div>
+      }
+    }
     }
 
     <!-- Modals -->
@@ -211,6 +262,89 @@
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="connectModal.set(false)">Annuler</button>
             <button type="submit" class="btn btn-green btn-sm">Envoyer la demande</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (supplierModal(); as a) {
+      <div class="pf-modal-overlay" (click)="supplierModal.set(null)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitSupplierRequest(dQty.value, dMsg.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Demander un réapprovisionnement</h3>
+            <button type="button" class="pf-modal-close" (click)="supplierModal.set(null)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+              <span class="pf-liic {{ a.niveau === 'crit' ? 'red' : 'amber' }}"><nv-icon name="alert" [size]="18"/></span>
+              <div class="pf-libody"><strong>{{ a.med }}</strong><span>{{ a.service }} · {{ a.reste }} restant</span></div>
+            </div>
+
+            <div class="s-field" style="margin:0">
+              <label>Fournisseurs à solliciter * <span class="muted" style="font-weight:400">— stock lu chez chaque fournisseur</span></label>
+              @if (suppliersLoading()) {
+                <div class="muted" style="padding:10px 0"><span class="pf-spin"></span> Recherche des fournisseurs…</div>
+              }
+              @for (d of suppliers(); track d.id) {
+                <label class="pf-li" style="padding:10px 0;cursor:pointer">
+                  <input type="checkbox" [checked]="selectedSuppliers().has(d.id)" (change)="toggleSupplier(d.id)" [disabled]="alreadyAsked(a).has(d.id)" style="width:18px;height:18px;accent-color:var(--green)"/>
+                  <span class="pf-liic {{ d.has_stock ? 'green' : '' }}"><nv-icon name="truck" [size]="16"/></span>
+                  <div class="pf-libody">
+                    <strong>{{ d.name }} @if (d.is_partner) { <span class="chip chip-blue" style="margin-left:6px">Partenaire</span> }</strong>
+                    <span>{{ d.kind }} · {{ d.city }}</span>
+                  </div>
+                  @if (alreadyAsked(a).has(d.id)) {
+                    <span class="chip chip-amber">Déjà demandé</span>
+                  } @else if (d.has_stock) {
+                    <pf-tag s="ok">{{ d.available }} u. dispo</pf-tag>
+                  } @else if (a.medId) {
+                    <pf-tag s="out">Non disponible</pf-tag>
+                  }
+                </label>
+              }
+              @if (!suppliersLoading() && suppliers().length === 0) { <div class="muted" style="padding:10px 0">Aucun fournisseur enregistré.</div> }
+            </div>
+
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Quantité souhaitée *</label><input #dQty required type="number" min="1" value="50"/></div>
+              <div class="s-field" style="margin:0"><label>Message</label><input #dMsg placeholder="Ex : urgence réanimation"/></div>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="supplierModal.set(null)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm" [disabled]="sending() || selectedSuppliers().size === 0">
+              <nv-icon name="send" [size]="15"/> Envoyer à {{ selectedSuppliers().size }} fournisseur(s)
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (praModal()) {
+      <div class="pf-modal-overlay" (click)="praModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitPraOrder(oMed.value, oQty.value, oUrg.value, oSrv.value, oNotes.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Nouvelle commande PRA</h3>
+            <button type="button" class="pf-modal-close" (click)="praModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Médicament *</label><input #oMed required placeholder="Nom du médicament (catalogue)"/></div>
+            <div class="pf-fieldrow" style="margin:0">
+              <div class="s-field" style="margin:0"><label>Quantité *</label><input #oQty required type="number" min="1" placeholder="Ex : 200"/></div>
+              <div class="s-field" style="margin:0"><label>Urgence *</label>
+                <select #oUrg required>
+                  <option value="normal">Normale</option>
+                  <option value="urgent">Urgente</option>
+                  <option value="critical">Critique</option>
+                </select>
+              </div>
+            </div>
+            <div class="s-field" style="margin:0"><label>Service demandeur</label><input #oSrv placeholder="Ex : Réanimation"/></div>
+            <div class="s-field" style="margin:0"><label>Notes</label><textarea #oNotes rows="2" placeholder="Précisions…"></textarea></div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="praModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm">Envoyer à la PRA</button>
           </div>
         </form>
       </div>

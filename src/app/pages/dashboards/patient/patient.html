@@ -9,6 +9,7 @@
               @if (q()) { <button (click)="clear()" style="color:var(--gray-text)"><nv-icon name="x" [size]="18"/></button> }
             </div>
             <button class="btn btn-primary"><nv-icon name="qr" [size]="18"/> Scanner</button>
+            <button class="btn btn-outline" (click)="prescriptionModal.set(true)"><nv-icon name="doc" [size]="18"/> Ordonnance</button>
           </div>
 
           @if (!q()) {
@@ -47,7 +48,7 @@
           }
 
           @if (active(); as a) {
-            <app-patient-results [med]="a" (back)="active.set(null)" (reserve)="reserve(a, $event)"/>
+            <app-patient-results [med]="a" (back)="active.set(null)" (reserve)="reserve(a, $event)" (groupedSearch)="launchGroupedSearch(a)"/>
           }
         </div>
       }
@@ -75,6 +76,9 @@
                   <div style="text-align:right">
                     <pf-tag [s]="r.s">{{ r.statut }}</pf-tag>
                     <div class="pf-medsub" style="margin-top:6px">{{ r.quand }}</div>
+                    @if (r.status === 'pending') {
+                      <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-top:8px" (click)="cancelResa(r.orderId)">Annuler</button>
+                    }
                   </div>
                 </div>
               }
@@ -88,4 +92,75 @@
       @case ('profil') {
         <app-simple-profile role="patient" title="Mon profil" [name]="auth.user()?.name || 'Mon Profil'" sub="Patiente / Accompagnante" [fields]="profilFields()"/>
       }
+    }
+
+    @if (prescriptionModal()) {
+      <div class="pf-modal-overlay" (click)="prescriptionModal.set(false)">
+        <form class="pf-modal" (click)="$event.stopPropagation()" (submit)="submitPrescription(oPharm.value, oNotes.value); $event.preventDefault()">
+          <div class="pf-modal-head">
+            <h3>Envoyer une ordonnance</h3>
+            <button type="button" class="pf-modal-close" (click)="prescriptionModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <div class="s-field" style="margin:0"><label>Pharmacie destinataire *</label>
+              <select #oPharm required>
+                <option value="">Sélectionnez une pharmacie</option>
+                @for (p of pharmacies(); track p.id) { <option [value]="p.id">{{ p.nom }}{{ p.ville ? ' — ' + p.ville : '' }}</option> }
+              </select>
+            </div>
+            <div class="s-field" style="margin:0"><label>Ordonnance (image ou PDF) *</label>
+              <input type="file" accept="image/jpeg,image/png,application/pdf" (change)="onPrescriptionFile($event)" required/>
+            </div>
+            <div class="s-field" style="margin:0"><label>Note (facultatif)</label>
+              <textarea #oNotes rows="3" placeholder="Précisions pour le pharmacien…"></textarea>
+            </div>
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="prescriptionModal.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-green btn-sm" [disabled]="!prescriptionFile()">Envoyer</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (groupedModal()) {
+      <div class="pf-modal-overlay" (click)="groupedModal.set(false)">
+        <div class="pf-modal" (click)="$event.stopPropagation()">
+          <div class="pf-modal-head">
+            <h3>Recherche groupée</h3>
+            <button type="button" class="pf-modal-close" (click)="groupedModal.set(false)"><nv-icon name="x" [size]="20"/></button>
+          </div>
+          <div class="pf-modal-body">
+            <p class="muted" style="font-size:13.5px">{{ groupedInfo()?.target_count || 0 }} pharmacie(s) de votre zone ont été alertées pour <strong>{{ groupedInfo()?.medicine }}</strong>. Les réponses arrivent au fil de l'eau.</p>
+            @if (groupedStatus(); as st) {
+              <div class="pf-li" style="border:none;padding:6px 0">
+                <div class="pf-libody"><strong>{{ st.response_count }} / {{ st.target_count }} réponses</strong><span>{{ st.pending_count }} en attente</span></div>
+              </div>
+              @if (st.available?.length) {
+                <span class="muted" style="font-size:13px;font-weight:600;display:block;margin:6px 0">Pharmacies disponibles</span>
+                @for (p of st.available; track p.structure_id) {
+                  <div class="pf-li">
+                    <span class="pf-liic green"><nv-icon name="pin" [size]="16"/></span>
+                    <div class="pf-libody"><strong>{{ p.name }}</strong><span>{{ p.address }} · {{ p.phone }}</span></div>
+                    <button class="btn btn-green btn-sm" (click)="reserve(active()!, p.structure_id); groupedModal.set(false)">Réserver</button>
+                  </div>
+                }
+              } @else {
+                <div class="muted" style="padding:10px 0;font-size:13.5px">Aucune pharmacie n'a encore confirmé de disponibilité.</div>
+              }
+              @if (st.equivalents?.length) {
+                <span class="muted" style="font-size:13px;font-weight:600;display:block;margin:6px 0">Équivalents suggérés</span>
+                @for (e of st.equivalents; track e.id) {
+                  <div class="pf-li"><span class="pf-liic amber"><nv-icon name="pill" [size]="16"/></span><div class="pf-libody"><strong>{{ e.name }}</strong><span>{{ e.dosage }} · {{ e.form }}</span></div></div>
+                }
+              }
+              @if (st.preventive_alert) { <p class="muted" style="font-size:12.5px;margin-top:8px">⚠ {{ st.preventive_alert }}</p> }
+            }
+          </div>
+          <div class="pf-modal-foot">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="groupedModal.set(false)">Fermer</button>
+            <button type="button" class="btn btn-green btn-sm" (click)="refreshGroupedStatus()"><nv-icon name="clock" [size]="15"/> Actualiser</button>
+          </div>
+        </div>
+      </div>
     }

@@ -30,6 +30,19 @@ export class MedicineService {
     );
   }
 
+  /** GET /medicines → catalogue complet (pour les listes déroulantes). */
+  list(): Observable<{ id: number; name: string; label: string }[]> {
+    const params = new HttpParams().set('per_page', '200');
+    return this.http.get<{ data: ApiMedicine[] }>(`${this.base}/medicines`, { params }).pipe(
+      map(r => (r.data ?? []).map(m => ({
+        id: Number(m.id),
+        name: m.name,
+        label: m.dosage ? `${m.name} — ${m.dosage}${m.form ? ' (' + m.form + ')' : ''}` : m.name,
+      }))),
+      catchError(() => of([])),
+    );
+  }
+
   /** GET /medicines/{id}/availability → points de disponibilité (officines). */
   availability(medId: number): Observable<AvailabilityRow[]> {
     return this.http.get<{ data: ApiAvailabilityRow[] }>(`${this.base}/medicines/${medId}/availability`).pipe(
@@ -57,11 +70,12 @@ function toDispoState(status: string): DispoState {
 function toAvailabilityRow(r: ApiAvailabilityRow): AvailabilityRow {
   return {
     structureId: r.structure_id,
-    pharmacy: r.pharmacy,
+    pharmacy: r.pharmacy_name ?? r.pharmacy ?? '—',
     city: r.city ?? '',
     phone: r.phone ?? '',
-    dist: distanceLabel(r.latitude, r.longitude),
+    dist: r.distance_label ?? distanceLabel(r.latitude, r.longitude),
     s: toDispoState(r.status),
     label: r.label,
+    available: Number(r.available ?? 0),
   };
 }

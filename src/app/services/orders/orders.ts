@@ -28,6 +28,33 @@ export class OrderService {
   cancel(orderId: number): Observable<unknown> {
     return this.http.delete(`${this.base}/orders/${orderId}`);
   }
+
+  /** POST /orders/prescriptions → envoie une ordonnance numérique (multipart). */
+  submitPrescription(structureId: number, file: File, notes: string): Observable<unknown> {
+    const form = new FormData();
+    form.append('structure_id', String(structureId));
+    form.append('prescription_file', file);
+    if (notes) form.append('notes', notes);
+    // Pas de Content-Type manuel : Angular pose la frontière multipart lui-même.
+    return this.http.post(`${this.base}/orders/prescriptions`, form);
+  }
+
+  /** POST /grouped-search → lance une recherche groupée auprès des pharmacies de la zone. */
+  startGroupedSearch(medicineId: number, lat?: number, lng?: number): Observable<any> {
+    const body: Record<string, unknown> = { medicine_id: medicineId };
+    if (lat != null && lng != null) { body['latitude'] = lat; body['longitude'] = lng; }
+    return this.http.post<{ data: any }>(`${this.base}/grouped-search`, body).pipe(
+      map(r => r.data ?? null),
+      catchError(() => of(null)),
+    );
+  }
+
+  /** GET /grouped-search/{id}/status → état de la recherche groupée. */
+  groupedSearchStatus(searchId: number): Observable<any> {
+    return this.http.get<any>(`${this.base}/grouped-search/${searchId}/status`).pipe(
+      catchError(() => of(null)),
+    );
+  }
 }
 
 const STATUS: Record<string, { statut: string; s: DispoState }> = {
@@ -46,6 +73,7 @@ function toResa(o: ApiOrder): ResaRow {
     statut: m.statut,
     quand: formatWhen(o.created_at),
     s: m.s,
+    status: o.status,
   };
 }
 

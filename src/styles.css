@@ -81,6 +81,17 @@ img{max-width:100%;display:block}
 
 /* ---------- Cartes ---------- */
 .card{background:#fff;border:1px solid var(--gray-line);border-radius:var(--r);box-shadow:var(--shadow-sm)}
+/* Espace vertical entre cartes empilées dans les listes des dashboards
+   (neutralisé dans les grilles où l'espacement vient déjà de `gap`). */
+.pf-content .card + .card{margin-top:22px}
+.pf-content .pf-cols > .card + .card,
+.pf-content .pf-half > .card + .card,
+.pf-content .pf-cols3 > .card + .card{margin-top:0}
+
+/* Loader (spinner) affiché pendant le chargement des données */
+.pf-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:70px 0;color:var(--gray-text);font-size:14px}
+.pf-spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--gray-line);border-top-color:var(--green);animation:pf-spin .7s linear infinite}
+@keyframes pf-spin{to{transform:rotate(360deg)}}
 
 /* ---------- Placeholder image (charte: photos équipes/tech) ---------- */
 .ph{
@@ -268,7 +279,9 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .s-contactgrid{display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;align-items:start}
 .s-contactlist{display:flex;flex-direction:column;gap:16px}
 .s-contactline{display:flex;align-items:center;gap:14px}
-.s-contacticon{width:46px;height:46px;border-radius:12px;background:var(--blue);color:var(--green);display:grid;place-items:center;flex:none}
+.s-contacticon{width:46px;height:46px;border-radius:12px;background:var(--blue);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none}
+.s-contacticon nv-icon{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.s-contacticon svg{display:block}
 .s-contactline span{font-size:12.5px;color:var(--gray-text);display:block}
 .s-contactline strong{font-family:'Montserrat';font-weight:700;color:var(--blue);font-size:15.5px}
 .s-form{padding:30px}
@@ -286,9 +299,9 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .s-formok .btn{margin-top:18px}
 
 /* ---------- Footer ---------- */
-.s-footer{background:var(--blue);color:#fff;padding:0 0 30px}
+.s-footer{background:var(--blue);color:#fff;padding:40px 0 30px}
 .s-newsletter{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;
-  display:flex;align-items:center;justify-content:space-between;gap:30px;padding:34px 40px;margin-top:-60px;position:relative;z-index:2;box-shadow:var(--shadow-lg)}
+  display:flex;align-items:center;justify-content:space-between;gap:30px;padding:34px 40px;margin-top:0;position:relative;z-index:2;box-shadow:var(--shadow-lg)}
 .s-newsform{display:flex;gap:10px;flex:none}
 .s-newsform input{font-family:'Open Sans';font-size:14.5px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);
   color:#fff;border-radius:var(--r-pill);padding:13px 20px;min-width:260px}
@@ -299,7 +312,7 @@ nv-icon,nv-logo,pf-card,pf-stat,pf-bar,pf-tag,pf-page-head,pf-zone-map,pf-qr,pf-
 .s-footbrand p{color:rgba(255,255,255,.65);font-size:14.5px;margin:18px 0 20px;max-width:300px}
 .s-footcol h5{font-family:'Montserrat';font-weight:700;color:#fff;font-size:15px;margin-bottom:16px}
 .s-footcol{display:flex;flex-direction:column;gap:11px}
-.s-footcol a{color:rgba(255,255,255,.65);font-size:14.5px;transition:.15s}
+.s-footcol a{color:rgba(255,255,255,.65);font-size:14.5px;transition:.15s;width:fit-content;}
 .s-footcol a:hover{color:#9fdcb8}
 .s-footbottom{display:flex;justify-content:space-between;align-items:center;gap:16px;
   border-top:1px solid rgba(255,255,255,.12);padding-top:24px;color:rgba(255,255,255,.55);font-size:13px}

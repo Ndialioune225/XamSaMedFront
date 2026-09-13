@@ -6,8 +6,9 @@ import { Tag } from '../../../components/tag/tag';
 import { PlatformState } from '../../../services/platform/platform';
 import { MedicineService } from '../../../services/medicines/medicines';
 import { OrderService } from '../../../services/orders/orders';
+import { StructureService } from '../../../services/structures/structures';
 import { AuthService } from '../../../services/auth/auth';
-import { Med, ResaRow } from '../../../interfaces/models';
+import { Med, Pharmacy, ResaRow } from '../../../interfaces/models';
 import { PatientResults } from '../patient-results/patient-results';
 import { PatientPharmacies } from '../patient-pharmacies/patient-pharmacies';
 import { SimpleProfile } from '../profile/profile';
@@ -26,6 +27,7 @@ export class PatientDash {
   private readonly platform = inject(PlatformState);
   private readonly meds = inject(MedicineService);
   private readonly orders = inject(OrderService);
+  private readonly structures = inject(StructureService);
 
   readonly section = model.required<string>();
   readonly q = signal('');
@@ -33,6 +35,17 @@ export class PatientDash {
   readonly results = signal<Med[]>([]);
   readonly searching = signal(false);
   readonly resas = signal<ResaRow[]>([]);
+
+  // Ordonnance numérique
+  readonly prescriptionModal = signal(false);
+  readonly pharmacies = signal<Pharmacy[]>([]);
+  readonly prescriptionFile = signal<File | null>(null);
+
+  // Recherche groupée
+  readonly groupedModal = signal(false);
+  readonly groupedSearchId = signal<number | null>(null);
+  readonly groupedInfo = signal<any>(null);
+  readonly groupedStatus = signal<any>(null);
 
   readonly suggestions = ['Morphine', 'Insuline Glargine', 'Paracétamol', 'Ventoline', 'Amlodipine'];
   protected readonly auth = inject(AuthService);
@@ -47,7 +60,10 @@ export class PatientDash {
     ];
   });
 
-  constructor() { this.loadResas(); }
+  constructor() {
+    this.loadResas();
+    this.structures.pharmacies().subscribe({ next: p => this.pharmacies.set(p), error: () => { /* ignore */ } });
+  }
 
   onSearch(e: Event): void { this.runSearch((e.target as HTMLInputElement).value); }
   setQuery(s: string): void { this.runSearch(s); }
@@ -75,6 +91,62 @@ export class PatientDash {
       },
       error: () => this.platform.notify('Échec de la réservation', 'alert'),
     });
+  }
+
+  /** Annule une réservation en attente. */
+  cancelResa(orderId: number): void {
+    this.orders.cancel(orderId).subscribe({
+      next: () => { this.platform.notify('Réservation annulée', 'info'); this.loadResas(); },
+      error: () => this.platform.notify('Échec de l’annulation', 'alert'),
+    });
+  }
+
+  onPrescriptionFile(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    this.prescriptionFile.set(input.files?.[0] ?? null);
+  }
+
+  /** Envoie l'ordonnance numérique à la pharmacie choisie. */
+  submitPrescription(structureId: string, notes: string): void {
+    const sid = Number(structureId);
+    const file = this.prescriptionFile();
+    if (!sid || !file) {
+      this.platform.notify('Sélectionnez une pharmacie et un fichier', 'alert');
+      return;
+    }
+    this.orders.submitPrescription(sid, file, notes).subscribe({
+      next: () => {
+        this.platform.notify('Ordonnance envoyée à la pharmacie', 'ok');
+        this.prescriptionModal.set(false);
+        this.prescriptionFile.set(null);
+        this.loadResas();
+        this.section.set('resa');
+      },
+      error: () => this.platform.notify('Échec de l’envoi de l’ordonnance', 'alert'),
+    });
+  }
+
+  /** Lance une recherche groupée pour le médicament actif (aucune dispo publique). */
+  launchGroupedSearch(med: Med): void {
+    this.orders.startGroupedSearch(Number(med.id)).subscribe({
+      next: res => {
+        if (!res) { this.platform.notify('Aucune pharmacie trouvée dans votre zone', 'alert'); return; }
+        this.groupedInfo.set(res);
+        this.groupedSearchId.set(res.search_id);
+        this.groupedStatus.set(null);
+        this.groupedModal.set(true);
+        this.platform.notify(`${res.target_count} pharmacie(s) alertée(s)`, 'ok');
+        this.refreshGroupedStatus();
+      },
+      error: () => this.platform.notify('Échec de la recherche groupée', 'alert'),
+    });
+  }
+
+  /** Rafraîchit l'état de la recherche groupée en cours. */
+  refreshGroupedStatus(): void {
+    const id = this.groupedSearchId();
+    if (!id) return;
+    this.orders.groupedSearchStatus(id).subscribe({ next: s => this.groupedStatus.set(s), error: () => { /* ignore */ } });
   }
 
   private loadResas(): void {

@@ -1,10 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiRegionalDemand, ApiZone, DistributorAlertsResponse, ShortageAlert } from '../../interfaces/api';
-import { DemandeReg, ZoneInfo, ZoneLevel, DeliveryRow } from '../../interfaces/models';
-import { AuthService } from '../auth/auth';
+import {
+  ApiDestination, ApiIncomingRequest, ApiInstitutionalOrder, ApiRegionalDemand, ApiZone,
+  DistributorAlertsResponse, ShortageAlert,
+} from '../../interfaces/api';
+import { DemandeReg, ZoneInfo, ZoneLevel, DeliveryRow, DeliveryStatus } from '../../interfaces/models';
 
 /** Coordonnées (% sur la carte) des principales villes du Sénégal. */
 const CITY_GEO: Record<string, { x: number; y: number }> = {
@@ -23,16 +25,29 @@ export function toZoneInfo(name: string, level: string, ruptures: number): ZoneI
   return { nom: name, x: g.x, y: g.y, niveau: asZoneLevel(level), ruptures };
 }
 
-/** Endpoints distributeur (alertes, demandes régionales, zones) — données réelles. */
+/** Indicateurs du tableau de bord distributeur (GET /distributor/dashboard). */
+export interface DistributorDashboard {
+  planned: number;
+  in_transit: number;
+  delivered: number;
+  critical_zones: number;
+  pending_alerts: number;
+  pending_requests: number;
+  structure: { id: number; name: string; type: string; city: string | null; region: string | null } | null;
+}
+
+/**
+ * Endpoints distributeur / PNA / PRA — données réelles.
+ * Le périmètre (national pour la PNA, régional pour une PRA) est appliqué par
+ * le backend d'après structures.type / region : rien n'est filtré ici.
+ */
 @Injectable({ providedIn: 'root' })
 export class DistributorService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
 
-  private readonly auth = inject(AuthService);
-
-  dashboard(): Observable<any> {
-    return this.http.get<{ data: any }>(`${this.base}/distributor/dashboard`).pipe(
+  dashboard(): Observable<Partial<DistributorDashboard>> {
+    return this.http.get<{ data: DistributorDashboard }>(`${this.base}/distributor/dashboard`).pipe(
       map(r => r.data ?? {}),
       catchError(() => of({})),
     );
@@ -42,16 +57,14 @@ export class DistributorService {
   alerts(): Observable<ShortageAlert[]> {
     return this.http.get<DistributorAlertsResponse>(`${this.base}/distributor/alerts`).pipe(
       map(r => r.data ?? []),
-      map(alerts => this.applyScopeFilter(alerts, 'alert')),
       catchError(() => of([])),
     );
   }
 
-  /** GET /distributor/regional-demands — agrégation par zone + médicament. */
+  /** GET /distributor/regional-demands — agrégation par zone + médicament (avec les officines concernées). */
   regionalDemands(): Observable<DemandeReg[]> {
     return this.http.get<{ data: ApiRegionalDemand[] }>(`${this.base}/distributor/regional-demands`).pipe(
-      map(r => r.data.map(toDemandeReg)),
-      map(demands => this.applyScopeFilter(demands, 'demand')),
+      map(r => (r.data ?? []).map(toDemandeReg)),
       catchError(() => of([])),
     );
   }
@@ -59,13 +72,50 @@ export class DistributorService {
   /** GET /distributor/zones — villes avec ruptures + niveau de tension. */
   zones(): Observable<ZoneInfo[]> {
     return this.http.get<{ data: ApiZone[] }>(`${this.base}/distributor/zones`).pipe(
-      map(r => r.data.map(z => toZoneInfo(z.name, z.level, z.ruptures))),
-      map(zones => this.applyScopeFilter(zones, 'zone')),
+      map(r => (r.data ?? []).map(z => toZoneInfo(z.name, z.level, z.ruptures))),
       catchError(() => of([])),
     );
   }
 
-  // --- API LIVRAISONS (DIS-006 à DIS-010) ---
+  /** GET /distributor/previsions — prévisions basées sur les données réelles. */
+  previsions(): Observable<any[]> {
+    return this.http.get<{ data: any[] }>(`${this.base}/distributor/previsions`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  // --- DEMANDES DE RÉAPPROVISIONNEMENT REÇUES (officines & hôpitaux) ---
+
+  /** GET /distributor/requests — demandes adressées à ce fournisseur. */
+  requests(): Observable<ApiIncomingRequest[]> {
+    return this.http.get<{ data: ApiIncomingRequest[] }>(`${this.base}/distributor/requests`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** POST /distributor/requests/{alert}/fulfill — traite la demande en planifiant une livraison. */
+  fulfillRequest(id: number, deliveryDate: string, quantity?: number, notes?: string): Observable<unknown> {
+    return this.http.post(`${this.base}/distributor/requests/${id}/fulfill`, { delivery_date: deliveryDate, quantity, notes });
+  }
+
+  /** POST /distributor/requests/{alert}/reject */
+  rejectRequest(id: number, reason: string): Observable<unknown> {
+    return this.http.post(`${this.base}/distributor/requests/${id}/reject`, { reason });
+  }
+
+  // --- LIVRAISONS ---
+
+  /** GET /distributor/destinations?medicine_id= — structures livrables (selon le type du fournisseur) + état de stock. */
+  destinations(medicineId?: number | null): Observable<ApiDestination[]> {
+    let params = new HttpParams();
+    if (medicineId) params = params.set('medicine_id', String(medicineId));
+    return this.http.get<{ data: ApiDestination[] }>(`${this.base}/distributor/destinations`, { params }).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
 
   /** GET /distributor/deliveries */
   deliveries(): Observable<DeliveryRow[]> {
@@ -75,9 +125,11 @@ export class DistributorService {
     );
   }
 
-  /** POST /distributor/deliveries */
-  createDelivery(zone: string, med: string, qty: number, date: string): Observable<unknown> {
-    return this.http.post(`${this.base}/distributor/deliveries`, { zone, medicine: med, quantity: qty, delivery_date: date });
+  /** POST /distributor/deliveries — destination explicite (structure), médicament du catalogue. */
+  createDelivery(structureId: number, medicineId: number, qty: number, date: string, notes?: string, requestId?: number): Observable<unknown> {
+    return this.http.post(`${this.base}/distributor/deliveries`, {
+      structure_id: structureId, medicine_id: medicineId, quantity: qty, delivery_date: date, notes, request_id: requestId,
+    });
   }
 
   /** PUT /distributor/deliveries/{id} */
@@ -90,71 +142,104 @@ export class DistributorService {
     return this.http.post(`${this.base}/distributor/deliveries/${id}/start`, {});
   }
 
-  changeDeliveryStatus(id: string, status: string): Observable<unknown> {
+  changeDeliveryStatus(id: string, status: DeliveryStatus): Observable<unknown> {
     if (status === 'En transit') return this.startDelivery(id);
     if (status === 'Livrée') return this.http.post(`${this.base}/distributor/deliveries/${id}/complete`, {});
     return this.http.delete(`${this.base}/distributor/deliveries/${id}`);
   }
 
-  /** GET /distributor/previsions — prévisions basées sur les données réelles. */
-  previsions(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/distributor/previsions`).pipe(
+  // --- FLUX INSTITUTIONNEL (secteur public) ---
+
+  /** GET /pra/orders — commandes des hôpitaux reçues par cette PRA. */
+  praOrders(): Observable<ApiInstitutionalOrder[]> {
+    return this.http.get<{ data: ApiInstitutionalOrder[] }>(`${this.base}/pra/orders`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
   }
 
-  /** Filtre les données selon les règles DIS-SCOPE (PNA vs PRA vs PRIVATE) */
-  private applyScopeFilter<T>(items: T[], type: 'alert' | 'demand' | 'zone'): T[] {
-    const user = this.auth.user();
-    if (!user || user.role !== 'distributor_user') return items;
+  /** POST /pra/orders/{alert}/fulfill — traiter une commande hôpital (planifie une livraison). */
+  praFulfill(alertId: number, deliveryDate: string, notes?: string): Observable<unknown> {
+    return this.http.post(`${this.base}/pra/orders/${alertId}/fulfill`, { delivery_date: deliveryDate, notes });
+  }
 
-    // On cast profile_meta pour accéder aux attributs du distributeur
-    const meta = user.profile_meta as any;
-    const distType = meta?.type || 'PNA'; // Par défaut PNA si non défini
-    const region = meta?.region;
+  /** POST /pra/orders/{alert}/reject */
+  praReject(alertId: number, reason: string): Observable<unknown> {
+    return this.http.post(`${this.base}/pra/orders/${alertId}/reject`, { reason });
+  }
 
-    if (distType === 'PNA') {
-      return items; // DIS-SCOPE-001: Vue nationale complète
-    }
+  /** GET /pra/pna-orders — commandes de cette PRA vers la PNA. */
+  praPnaOrders(): Observable<ApiInstitutionalOrder[]> {
+    return this.http.get<{ data: ApiInstitutionalOrder[] }>(`${this.base}/pra/pna-orders`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
 
-    if (distType === 'PRA' && region) {
-      // DIS-SCOPE-002: Vue régionale uniquement
-      return items.filter(item => {
-        if (type === 'demand') return (item as unknown as DemandeReg).zone === region;
-        if (type === 'zone') return (item as unknown as ZoneInfo).nom === region;
-        // Pour les alertes, on simule un filtrage ou on les laisse passer si la structure ne permet pas de filtrer géographiquement ici
-        return true;
-      });
-    }
+  /** POST /pra/pna-orders — la PRA commande à la PNA. */
+  createPnaOrder(payload: { medicine_id: number; quantity: number; urgency: string; notes?: string }): Observable<unknown> {
+    return this.http.post(`${this.base}/pra/pna-orders`, payload);
+  }
 
-    if (distType === 'PRIVATE') {
-      // DIS-SCOPE-005: Distributeur privé (limité aux partenaires privés, simulé ici)
-      return items;
-    }
+  /** GET /pna/dashboard — supervision nationale. */
+  pnaDashboard(): Observable<any> {
+    return this.http.get<{ data: any }>(`${this.base}/pna/dashboard`).pipe(
+      map(r => r.data ?? {}),
+      catchError(() => of({})),
+    );
+  }
 
-    return items;
+  /** GET /pna/orders — vue nationale de toutes les commandes institutionnelles. */
+  pnaOrders(): Observable<ApiInstitutionalOrder[]> {
+    return this.http.get<{ data: ApiInstitutionalOrder[] }>(`${this.base}/pna/orders`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** GET /pna/requests — commandes des PRA adressées à la PNA. */
+  pnaRequests(): Observable<ApiInstitutionalOrder[]> {
+    return this.http.get<{ data: ApiInstitutionalOrder[] }>(`${this.base}/pna/requests`).pipe(
+      map(r => r.data ?? []),
+      catchError(() => of([])),
+    );
+  }
+
+  /** POST /pna/requests/{alert}/fulfill — la PNA planifie la livraison vers la PRA. */
+  pnaFulfill(alertId: number, deliveryDate: string, notes?: string): Observable<unknown> {
+    return this.http.post(`${this.base}/pna/requests/${alertId}/fulfill`, { delivery_date: deliveryDate, notes });
+  }
+
+  /** POST /pna/requests/{alert}/reject */
+  pnaReject(alertId: number, reason: string): Observable<unknown> {
+    return this.http.post(`${this.base}/pna/requests/${alertId}/reject`, { reason });
   }
 }
 
 function toDemandeReg(d: ApiRegionalDemand): DemandeReg {
   return {
-    id: `${d.zone}-${d.medicine}`,
+    id: `${d.zone}-${d.medicine_id}`,
     zone: d.zone,
+    medId: d.medicine_id,
     med: d.medicine,
     vol: `~${Math.max(0, d.estimated_need)} u.`,
+    need: Math.max(0, d.estimated_need),
     tension: asZoneLevel(d.tension),
     officines: d.officines_count,
+    pharmacies: (d.pharmacies ?? []).map(p => ({
+      id: p.id, nom: p.name, adresse: p.address ?? '', tel: p.phone ?? '', available: p.available, status: p.status,
+    })),
   };
 }
 
 function toDeliveryRow(d: any): DeliveryRow {
   return {
     id: String(d.id),
-    zone: d.city ?? d.destination ?? '—',
+    zone: d.city ?? '—',
+    destination: d.destination ?? '—',
     med: d.medicine ?? '—',
     qty: Number(d.quantity ?? 0),
-    date: d.delivery_date ?? '',
+    date: d.delivery_date ? String(d.delivery_date).slice(0, 10) : '',
     status: d.status_label ?? d.status ?? 'Planifiée',
   };
 }
