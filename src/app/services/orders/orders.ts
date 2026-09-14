@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiOrder } from '../../interfaces/api';
+import { ApiGroupedSearch, ApiGroupedSearchStatus, ApiOrder } from '../../interfaces/api';
 import { DispoState, ResaRow } from '../../interfaces/models';
 
 /** Réservations / commandes côté patient. */
@@ -40,18 +40,18 @@ export class OrderService {
   }
 
   /** POST /grouped-search → lance une recherche groupée auprès des pharmacies de la zone. */
-  startGroupedSearch(medicineId: number, lat?: number, lng?: number): Observable<any> {
+  startGroupedSearch(medicineId: number, lat?: number, lng?: number): Observable<ApiGroupedSearch | null> {
     const body: Record<string, unknown> = { medicine_id: medicineId };
     if (lat != null && lng != null) { body['latitude'] = lat; body['longitude'] = lng; }
-    return this.http.post<{ data: any }>(`${this.base}/grouped-search`, body).pipe(
+    return this.http.post<{ data: ApiGroupedSearch | null }>(`${this.base}/grouped-search`, body).pipe(
       map(r => r.data ?? null),
       catchError(() => of(null)),
     );
   }
 
   /** GET /grouped-search/{id}/status → état de la recherche groupée. */
-  groupedSearchStatus(searchId: number): Observable<any> {
-    return this.http.get<any>(`${this.base}/grouped-search/${searchId}/status`).pipe(
+  groupedSearchStatus(searchId: number): Observable<ApiGroupedSearchStatus | null> {
+    return this.http.get<ApiGroupedSearchStatus>(`${this.base}/grouped-search/${searchId}/status`).pipe(
       catchError(() => of(null)),
     );
   }
@@ -61,6 +61,8 @@ const STATUS: Record<string, { statut: string; s: DispoState }> = {
   pending: { statut: 'En préparation', s: 'low' },
   confirmed: { statut: 'Prête au retrait', s: 'ok' },
   collected: { statut: 'Retirée', s: 'ok' },
+  oriented: { statut: 'Orientée vers une autre officine', s: 'low' },
+  rejected: { statut: 'Refusée', s: 'out' },
   cancelled: { statut: 'Annulée', s: 'out' },
 };
 

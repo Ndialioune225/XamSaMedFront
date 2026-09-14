@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiDemande, ApiRestockRequest, ApiStockRow } from '../../interfaces/api';
+import { ApiDemande, ApiGroupedAlert, ApiPrescription, ApiRestockRequest, ApiStockMovement, ApiStockRow } from '../../interfaces/api';
 import { DemandeRow, StockRow, StockState } from '../../interfaces/models';
 import { formatWhen } from '../orders/orders';
 
@@ -49,8 +49,8 @@ export class PharmacyService {
   }
 
   /** GET /pharmacy/prescriptions — ordonnances numériques reçues. */
-  prescriptions(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/pharmacy/prescriptions`).pipe(
+  prescriptions(): Observable<ApiPrescription[]> {
+    return this.http.get<{ data: ApiPrescription[] }>(`${this.base}/pharmacy/prescriptions`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
@@ -72,8 +72,8 @@ export class PharmacyService {
   }
 
   /** GET /pharmacy/grouped-alerts — alertes groupées en attente de réponse. */
-  groupedAlerts(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/pharmacy/grouped-alerts`).pipe(
+  groupedAlerts(): Observable<ApiGroupedAlert[]> {
+    return this.http.get<{ data: ApiGroupedAlert[] }>(`${this.base}/pharmacy/grouped-alerts`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
@@ -88,16 +88,16 @@ export class PharmacyService {
   }
 
   /** GET /pharmacy/stock/{stock}/movements — historique réel des mouvements. */
-  stockMovements(stockId: number): Observable<any[]> {
-    return this.http.get<{ data: any[]; medicine?: string }>(`${this.base}/pharmacy/stock/${stockId}/movements`).pipe(
+  stockMovements(stockId: number): Observable<ApiStockMovement[]> {
+    return this.http.get<{ data: ApiStockMovement[]; medicine?: string }>(`${this.base}/pharmacy/stock/${stockId}/movements`).pipe(
       map(r => (r.data ?? []).map(movement => ({ ...movement, medicine: r.medicine ?? movement.medicine }))),
       catchError(() => of([])),
     );
   }
 
   /** GET /pharmacy/alerts — alertes de seuil. */
-  alerts(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/pharmacy/alerts`).pipe(
+  alerts(): Observable<ApiStockRow[]> {
+    return this.http.get<{ data: ApiStockRow[] }>(`${this.base}/pharmacy/alerts`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
@@ -123,8 +123,8 @@ export class PharmacyService {
   }
 
   /** GET /pharmacy/dashboard — indicateurs tableau de bord. */
-  dashboard(): Observable<any> {
-    return this.http.get<{ data: any }>(`${this.base}/pharmacy/dashboard`).pipe(
+  dashboard(): Observable<Record<string, unknown>> {
+    return this.http.get<{ data: Record<string, unknown> }>(`${this.base}/pharmacy/dashboard`).pipe(
       map(r => r.data ?? {}),
       catchError(() => of({})),
     );

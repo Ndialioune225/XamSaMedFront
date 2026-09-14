@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { map, switchMap, throwError } from 'rxjs';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -9,7 +11,9 @@ import { HospitalService } from '../../../services/hospital/hospital';
 import { MedicineService } from '../../../services/medicines/medicines';
 import { StructureService } from '../../../services/structures/structures';
 import { AlerteHop, CritMedRow } from '../../../interfaces/models';
-import { ApiInstitutionalOrder, ApiRestockRequest, ApiSupplier } from '../../../interfaces/api';
+import { ApiErrorBody, ApiHospitalDashboard, ApiInstitutionalOrder, ApiPartner, ApiRestockRequest, ApiSupplier } from '../../../interfaces/api';
+
+const EMPTY_SET: ReadonlySet<number> = new Set<number>();
 
 /* ============================================================
    HÔPITAL — alertes internes, réseau, médicaments critiques (API réelle)
@@ -30,7 +34,7 @@ export class HopitalDash {
   readonly section = model.required<string>();
   readonly alertes = signal<AlerteHop[]>([]);
   readonly critMeds = signal<CritMedRow[]>([]);
-  readonly alertHistory = signal<any[]>([]);
+  readonly alertHistory = signal<AlerteHop[]>([]);
 
   readonly signalModal = signal(false);
   readonly connectModal = signal(false);
@@ -48,21 +52,35 @@ export class HopitalDash {
   readonly sending = signal(false);
   readonly restockRequests = signal<ApiRestockRequest[]>([]);
   readonly pendingRequests = computed(() => this.restockRequests().filter(r => r.status === 'pending'));
+  /** Fournisseurs déjà sollicités, indexés par alerte source — calculé une fois par changement. */
+  readonly askedByAlert = computed(() => {
+    const index = new Map<string, Set<number>>();
+    for (const r of this.pendingRequests()) {
+      if (r.source_alert_id == null || !r.distributor_id) continue;
+      const key = String(r.source_alert_id);
+      let set = index.get(key);
+      if (!set) { set = new Set(); index.set(key, set); }
+      set.add(r.distributor_id);
+    }
+    return index;
+  });
 
   readonly activeAlerts = computed(() => this.alertes().filter(a => a.niveau === 'crit' || a.niveau === 'haute'));
-  readonly resolvedCount = computed(() => this.alertHistory().filter(a => a.resolved).length);
   readonly activePartnerCount = computed(() => this.realPartners().filter(p => p.status === 'active').length);
   readonly pharmacyPartners = computed(() => this.realPartners().filter(p => p.type === 'pharmacy'));
   readonly distributorPartners = computed(() => this.realPartners().filter(p => p.type === 'distributor'));
 
+  readonly realPartners = signal<ApiPartner[]>([]);
+  readonly dashboardData = signal<ApiHospitalDashboard>({});
+
   constructor() {
     this.reload();
-    // Charger les partenaires depuis l'API réelle
-    this.hospital.partners().subscribe({ next: p => this.realPartners.set(p), error: () => { /* ignore */ } });
+    this.reloadPartners();
   }
 
-  readonly realPartners = signal<any[]>([]);
-  readonly dashboardData = signal<any>({});
+  private apiError(e: HttpErrorResponse, fallback: string): string {
+    return (e.error as ApiErrorBody | null)?.message ?? fallback;
+  }
 
   reload(): void {
     this.loading.set(true);
@@ -84,23 +102,25 @@ export class HopitalDash {
   submitPraOrder(med: string, qty: string, urgency: string, service: string, notes: string): void {
     const quantity = parseInt(qty, 10);
     if (!med.trim() || isNaN(quantity) || quantity <= 0) { this.platform.notify('Médicament et quantité requis', 'alert'); return; }
-    this.medicines.search(med.trim()).subscribe({
-      next: matches => {
+    this.medicines.search(med.trim()).pipe(
+      switchMap(matches => {
         const medicine = matches[0];
-        if (!medicine) { this.platform.notify('Médicament introuvable dans le catalogue', 'alert'); return; }
-        this.hospital.createPraOrder({
+        if (!medicine) return throwError(() => new Error('not_found'));
+        return this.hospital.createPraOrder({
           medicine_id: Number(medicine.id), quantity, urgency,
           service: service.trim() || undefined, notes: notes.trim() || undefined,
-        }).subscribe({
-          next: () => {
-            this.platform.notify('Commande envoyée à la PRA régionale', 'ok');
-            this.praModal.set(false);
-            this.hospital.praOrders().subscribe({ next: o => this.praOrders.set(o), error: () => {} });
-          },
-          error: (e: any) => this.platform.notify(e?.error?.message ?? 'Échec (aucune PRA pour votre région ?)', 'alert'),
         });
+      }),
+      switchMap(() => this.hospital.praOrders()),
+    ).subscribe({
+      next: orders => {
+        this.platform.notify('Commande envoyée à la PRA régionale', 'ok');
+        this.praModal.set(false);
+        this.praOrders.set(orders);
       },
-      error: () => this.platform.notify('Impossible de consulter le catalogue', 'alert'),
+      error: (e: unknown) => this.platform.notify(
+        e instanceof Error && e.message === 'not_found' ? 'Médicament introuvable dans le catalogue'
+          : e instanceof HttpErrorResponse ? this.apiError(e, 'Échec (aucune PRA pour votre région ?)') : 'Échec de la commande', 'alert'),
     });
   }
 
@@ -133,10 +153,8 @@ export class HopitalDash {
   }
 
   /** Fournisseurs déjà sollicités (demande en attente) pour cette alerte. */
-  alreadyAsked(alert: AlerteHop): Set<number> {
-    return new Set(this.pendingRequests()
-      .filter(r => String(r.source_alert_id ?? '') === alert.id && r.distributor_id)
-      .map(r => r.distributor_id as number));
+  alreadyAsked(alert: AlerteHop): ReadonlySet<number> {
+    return this.askedByAlert().get(alert.id) ?? EMPTY_SET;
   }
 
   toggleSupplier(id: number): void {
@@ -162,7 +180,7 @@ export class HopitalDash {
         this.supplierModal.set(null);
         this.reload();
       },
-      error: (e: any) => { this.sending.set(false); this.platform.notify(e?.error?.message ?? 'Échec de la demande de réapprovisionnement', 'alert'); },
+      error: (e: HttpErrorResponse) => { this.sending.set(false); this.platform.notify(this.apiError(e, 'Échec de la demande de réapprovisionnement'), 'alert'); },
     });
   }
 
@@ -211,42 +229,40 @@ export class HopitalDash {
   submitSignal(med: string, service: string, qty: string): void {
     const remaining = parseInt(qty, 10);
     // HOS-002 + HOS-003: Signaler la rupture via l'API réelle
-    this.medicines.search(med).subscribe({
-      next: matches => {
+    this.medicines.search(med).pipe(
+      switchMap(matches => {
         const medicine = matches[0];
-        if (!medicine) { this.platform.notify('Médicament introuvable dans le catalogue', 'alert'); return; }
-        this.hospital.createAlert(medicine.id, service, 'haute', remaining).subscribe({
-          next: () => {
-            this.platform.notify(`Alerte signalée pour ${medicine.nom} (${service})`, 'ok');
-            this.signalModal.set(false);
-            this.reload();
-          },
-          error: () => this.platform.notify('Échec du signalement', 'alert'),
-        });
+        if (!medicine) return throwError(() => new Error('not_found'));
+        return this.hospital.createAlert(medicine.id, service, 'haute', remaining).pipe(map(() => medicine));
+      }),
+    ).subscribe({
+      next: medicine => {
+        this.platform.notify(`Alerte signalée pour ${medicine.nom} (${service})`, 'ok');
+        this.signalModal.set(false);
+        this.reload();
       },
-      error: () => this.platform.notify('Impossible de consulter le catalogue', 'alert'),
+      error: (e: unknown) => this.platform.notify(
+        e instanceof Error && e.message === 'not_found' ? 'Médicament introuvable dans le catalogue' : 'Échec du signalement', 'alert'),
     });
   }
 
   submitConnect(partnerCode: string, type: string): void {
     // Appel API réel (recherche + ajout partenaire)
     const partnerType = type === 'Pharmacie' ? 'pharmacy' : 'distributor';
-    this.hospital.searchPartners(partnerCode, partnerType).subscribe({
-      next: results => {
-        if (results.length > 0) {
-          this.hospital.addPartner(results[0].id, partnerType).subscribe({
-            next: () => {
-              this.platform.notify(`Partenaire ${partnerCode} connecté avec succès`, 'ok');
-              this.connectModal.set(false);
-              this.hospital.partners().subscribe({ next: p => this.realPartners.set(p), error: () => {} });
-            },
-            error: () => this.platform.notify('Échec de la connexion', 'alert'),
-          });
-        } else {
-          this.platform.notify(`Aucun partenaire trouvé pour "${partnerCode}"`, 'alert');
-        }
+    this.hospital.searchPartners(partnerCode, partnerType).pipe(
+      switchMap(results => {
+        const found = results[0];
+        if (!found) return throwError(() => new Error('not_found'));
+        return this.hospital.addPartner(found.id, partnerType);
+      }),
+    ).subscribe({
+      next: () => {
+        this.platform.notify(`Partenaire ${partnerCode} connecté avec succès`, 'ok');
+        this.connectModal.set(false);
+        this.reloadPartners();
       },
-      error: () => this.platform.notify('Erreur de recherche', 'alert'),
+      error: (e: unknown) => this.platform.notify(
+        e instanceof Error && e.message === 'not_found' ? `Aucun partenaire trouvé pour "${partnerCode}"` : 'Échec de la connexion', 'alert'),
     });
   }
 }

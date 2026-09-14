@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -9,8 +10,8 @@ import { ZoneMap } from '../../../components/zone-map/zone-map';
 import { PlatformState } from '../../../services/platform/platform';
 import { DistributorDashboard, DistributorService } from '../../../services/distributor/distributor';
 import { MedicineService } from '../../../services/medicines/medicines';
-import { ApiDestination, ApiIncomingRequest, ApiInstitutionalOrder, ShortageAlert } from '../../../interfaces/api';
-import { DemandeReg, DeliveryRow, DeliveryStatus, SupplierKind, Tension, ZoneInfo } from '../../../interfaces/models';
+import { ApiDestination, ApiErrorBody, ApiForecast, ApiIncomingRequest, ApiInstitutionalOrder, ApiPnaDashboard, ShortageAlert } from '../../../interfaces/api';
+import { DemandeReg, DeliveryRow, DeliveryStatus, SupplierKind, ZoneInfo } from '../../../interfaces/models';
 import { AuthService } from '../../../services/auth/auth';
 
 type BarTone = 'green' | 'amber' | 'red' | 'blue';
@@ -54,7 +55,7 @@ export class DistribDash {
   readonly zones = signal<ZoneInfo[]>([]);
   readonly autoAlerts = signal<ShortageAlert[]>([]);
   readonly dashboardData = signal<Partial<DistributorDashboard>>({});
-  readonly forecasts = signal<any[]>([]);
+  readonly forecasts = signal<ApiForecast[]>([]);
   readonly sel = signal<string | null>(null);
   readonly loading = signal(true);
   readonly catalog = signal<{ id: number; name: string; label: string }[]>([]);
@@ -62,6 +63,7 @@ export class DistribDash {
   // --- DEMANDES DE RÉAPPROVISIONNEMENT REÇUES (officines / hôpitaux) ---
   readonly requests = signal<ApiIncomingRequest[]>([]);
   readonly pendingRequests = computed(() => this.requests().filter(r => r.status === 'pending'));
+  readonly recentPending = computed(() => this.pendingRequests().slice(0, 5));
   readonly handledRequests = computed(() => this.requests().filter(r => r.status !== 'pending'));
   readonly rejectModal = signal<ApiIncomingRequest | null>(null);
 
@@ -78,7 +80,7 @@ export class DistribDash {
   readonly praPnaOrders = signal<ApiInstitutionalOrder[]>([]);
   readonly pnaOrders = signal<ApiInstitutionalOrder[]>([]);
   readonly pnaRequests = signal<ApiInstitutionalOrder[]>([]);
-  readonly pnaDash = signal<any>({});
+  readonly pnaDash = signal<ApiPnaDashboard>({});
   readonly fulfillModal = signal<ApiInstitutionalOrder | null>(null);
   readonly pnaOrderModal = signal(false);
 
@@ -102,13 +104,6 @@ export class DistribDash {
     }
   });
 
-  // Prévisions calculées par l'API sur les stocks et seuils réels.
-  readonly tension = computed<Tension[]>(() => this.autoAlerts().map(a => ({
-    nom: a.name,
-    pct: a.severity === 'high' ? Math.min(95, 60 + a.pharmacies.length * 8) : Math.min(70, 40 + a.pharmacies.length * 6),
-    delai: ((a.pharmacies.length * 0.6) + 1).toFixed(1).replace('.', ',') + ' j',
-  })));
-  readonly forecastRows = computed(() => this.forecasts());
   readonly critZones = computed(() => this.zones().filter(z => z.niveau === 'crit').length);
   readonly tensionHigh = computed(() => this.autoAlerts().filter(a => a.severity === 'high').length);
   readonly urgentes = computed(() => this.demandes().filter(d => d.tension === 'haute').length);
@@ -158,8 +153,8 @@ export class DistribDash {
     }
   }
 
-  private apiError(e: any, fallback: string): string {
-    return e?.error?.message ?? fallback;
+  private apiError(e: HttpErrorResponse, fallback: string): string {
+    return (e.error as ApiErrorBody | null)?.message ?? fallback;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -381,21 +376,33 @@ export class DistribDash {
   sevTag(sev: string): string { return sev === 'high' ? 'crit' : 'low'; }
   sevLabel(sev: string): string { return sev === 'high' ? 'Critique' : 'Élevé'; }
 
-  forecast(zone: string): void {
-    this.sel.set(zone);
-    this.section.set('prev');
+  /** Délai réel de réappro. (delivery_plans livrés) ou absence d'historique. */
+  delayLabel(t: ApiForecast): string {
+    return t.avg_delay_days === null ? 'délai réappro. inconnu' : `délai réappro. ${t.avg_delay_days} j`;
+  }
+  delayTitle(t: ApiForecast): string {
+    return t.avg_delay_days === null
+      ? 'Aucune livraison de ce médicament confirmée à ce jour'
+      : `Moyenne création → livraison confirmée sur ${t.delay_sample} livraison(s)`;
   }
 
   exportForecasts(): void {
-    const rows = this.forecastRows();
+    const rows = this.forecasts();
     if (rows.length === 0) {
       this.platform.notify('Aucune prévision à exporter', 'alert');
       return;
     }
-    const header = ['Médicament', 'Probabilité (%)', 'Délai moyen (jours)', 'Niveau de risque', 'Officines concernées'];
+    const header = [
+      'Médicament', 'Probabilité (%)', 'Niveau de risque', 'Structures suivies', 'Structures à risque',
+      'En rupture', 'Sous seuil', 'Sous seuil d\'ici 14 j', 'Sorties (u./j)', 'Couverture moyenne (j)',
+      'Besoin 14 j (u.)', 'Délai réappro. (j)', 'Livraisons de référence',
+    ];
     const csvCell = (value: unknown): string => `"${String(value ?? '').replaceAll('"', '""')}"`;
-    const lines = rows.map(row => [row.medicine, row.probability, row.avg_delay_days, row.risk_level, row.affected_count]
-      .map(csvCell).join(','));
+    const lines = rows.map(row => [
+      row.medicine, row.probability, row.risk_level, row.tracked_count, row.affected_count,
+      row.out_of_stock, row.low_stock, row.projected_shortages, row.daily_demand, row.avg_days_of_cover,
+      row.estimated_need, row.avg_delay_days, row.delay_sample,
+    ].map(csvCell).join(','));
     const csv = '\uFEFFsep=,\r\n' + [header.map(csvCell).join(','), ...lines].join('\r\n') + '\r\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);

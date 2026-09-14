@@ -1,1 +1,6 @@
-/* page-head — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../styles.css";
+:host { @apply contents; }
+.pf-pagehead { @apply flex justify-between items-end gap-5 mb-6 flex-wrap; }
+.pf-pagehead h1 { @apply text-[27px] font-extrabold; }
+.pf-pagehead p { @apply text-[14.5px] mt-1; }
+.pf-pagehead-act { @apply flex gap-2.5 flex-wrap; }

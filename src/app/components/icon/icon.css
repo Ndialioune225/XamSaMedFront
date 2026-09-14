@@ -1,1 +1,2 @@
-/* icon — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../styles.css";
+:host { @apply contents; }

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ZoneInfo, ZoneLevel } from '../../interfaces/models';
 
-const COL: Record<ZoneLevel, string> = { crit: '#cf4338', haute: '#d8a13a', moyenne: 'var(--green)', basse: 'var(--blue)' };
+const COL: Record<ZoneLevel, string> = { crit: 'var(--color-red)', haute: 'var(--color-amber)', moyenne: 'var(--color-green)', basse: 'var(--color-blue)' };
 const SIZE: Record<ZoneLevel, number> = { crit: 64, haute: 52, moyenne: 40, basse: 30 };
 
 /* Carte des zones (tensions d'approvisionnement) — distrib + santé publique */

@@ -1,1 +1,8 @@
-/* zone-map — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../styles.css";
+:host { @apply contents; }
+.pf-mapzone { @apply absolute -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50; }
+.pf-maplabel { @apply absolute -translate-x-1/2 -translate-y-1/2 font-title font-bold text-[11px] text-blue bg-white/85 px-[7px] py-0.5 rounded-[6px] whitespace-nowrap; }
+.pf-maplegend .dot.crit { @apply bg-red; }
+.pf-maplegend .dot.haute { @apply bg-amber; }
+.pf-maplegend .dot.moyenne { @apply bg-green; }
+.pf-maplegend .dot.basse { @apply bg-blue; }

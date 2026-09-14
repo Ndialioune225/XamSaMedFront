@@ -1,1 +1,6 @@
-/* card — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../styles.css";
+:host { @apply contents; }
+.pf-block { @apply p-[22px]; }
+.pf-blockhead { @apply flex justify-between items-center gap-3.5 mb-[18px]; }
+.pf-blockhead h3 { @apply text-[18px] font-bold; }
+.pf-blockhead .muted { @apply text-[13px]; }

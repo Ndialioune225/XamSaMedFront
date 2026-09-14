@@ -9,6 +9,7 @@ import { OrderService } from '../../../services/orders/orders';
 import { StructureService } from '../../../services/structures/structures';
 import { AuthService } from '../../../services/auth/auth';
 import { Med, Pharmacy, ResaRow } from '../../../interfaces/models';
+import { ApiGroupedSearch, ApiGroupedSearchStatus } from '../../../interfaces/api';
 import { PatientResults } from '../patient-results/patient-results';
 import { PatientPharmacies } from '../patient-pharmacies/patient-pharmacies';
 import { SimpleProfile } from '../profile/profile';
@@ -44,8 +45,8 @@ export class PatientDash {
   // Recherche groupée
   readonly groupedModal = signal(false);
   readonly groupedSearchId = signal<number | null>(null);
-  readonly groupedInfo = signal<any>(null);
-  readonly groupedStatus = signal<any>(null);
+  readonly groupedInfo = signal<ApiGroupedSearch | null>(null);
+  readonly groupedStatus = signal<ApiGroupedSearchStatus | null>(null);
 
   readonly suggestions = ['Morphine', 'Insuline Glargine', 'Paracétamol', 'Ventoline', 'Amlodipine'];
   protected readonly auth = inject(AuthService);

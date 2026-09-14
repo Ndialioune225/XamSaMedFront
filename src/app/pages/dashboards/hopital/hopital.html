@@ -1,5 +1,5 @@
     @if (loading()) {
-      <div class="pf-loader"><span class="pf-spin"></span> Chargement des données…</div>
+      <div class="pf-loader"><span class="pf-spin pf-spin-sm"></span> Chargement des données…</div>
     } @else {
     @switch (section()) {
       @case ('home') {
@@ -21,7 +21,7 @@
                   <pf-tag [s]="ntag(a.niveau)">{{ a.reste }}</pf-tag>
                 </div>
               }
-              @if (alertes().length === 0) { <div class="muted" style="padding:14px 0">Aucune alerte interne active.</div> }
+              @if (alertes().length === 0) { <div class="pf-note">Aucune alerte interne active.</div> }
             </pf-card>
             <pf-card title="Réseau partenaires" sub="Pharmacies & distributeurs reliés">
               @for (p of realPartners(); track p.id) {
@@ -31,7 +31,7 @@
                   <span class="chip" [class.chip-green]="p.status === 'active'" [class.chip-amber]="p.status !== 'active'">{{ p.status === 'active' ? 'Connecté' : 'En attente' }}</span>
                 </div>
               }
-              @if (realPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucun partenaire enregistré.</div> }
+              @if (realPartners().length === 0) { <div class="pf-note">Aucun partenaire enregistré.</div> }
             </pf-card>
           </div>
         </div>
@@ -48,15 +48,15 @@
           </div>
           @for (a of alertes(); track a.id) {
             <pf-card>
-              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-                <span class="pf-liic {{ a.niveau === 'crit' ? 'red' : a.niveau === 'haute' ? 'amber' : 'green' }}" style="width:48px;height:48px"><nv-icon name="alert" [size]="22"/></span>
-                <div style="flex:1;min-width:200px">
-                  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                    <span class="pf-medname" style="font-size:16px">{{ a.med }}</span>
+              <div class="pf-row">
+                <span class="pf-liic lg {{ a.niveau === 'crit' ? 'red' : a.niveau === 'haute' ? 'amber' : 'green' }}"><nv-icon name="alert" [size]="22"/></span>
+                <div class="pf-row-body">
+                  <div class="pf-row-head">
+                    <span class="pf-medname">{{ a.med }}</span>
                     <span class="chip chip-blue">{{ a.service }}</span>
                     <pf-tag [s]="ntag(a.niveau)">{{ a.reste }} restant</pf-tag>
                   </div>
-                  <p class="muted" style="font-size:13.5px;margin-top:4px">Signalée {{ a.quand }}@if (alreadyAsked(a).size > 0) { · <span style="color:var(--blue)">réappro. demandé à {{ alreadyAsked(a).size }} fournisseur(s)</span> }</p>
+                  <p class="muted pf-row-sub">Signalée {{ a.quand }}@if (alreadyAsked(a).size > 0) { · <span class="pf-accent">réappro. demandé à {{ alreadyAsked(a).size }} fournisseur(s)</span> }</p>
                 </div>
                 <div class="pf-li-act">
                   <button class="btn btn-outline btn-sm" (click)="askRestock(a)"><nv-icon name="truck" [size]="15"/> Demander réappro.</button>
@@ -67,9 +67,9 @@
           }
           @if (alertes().length === 0) {
             <pf-card>
-              <div style="text-align:center;padding:34px;color:var(--gray-text)">
-                <nv-icon name="checkC" [size]="34" color="var(--green)"/>
-                <p style="margin-top:8px">Aucune alerte interne active.</p>
+              <div class="pf-empty">
+                <nv-icon name="checkC" [size]="34" color="var(--color-green)"/>
+                <p>Aucune alerte interne active.</p>
               </div>
             </pf-card>
           }
@@ -83,7 +83,7 @@
                 <pf-tag [s]="requestTag(r.status)">{{ requestStatusLabel(r) }}</pf-tag>
               </div>
             }
-            @if (restockRequests().length === 0) { <div class="muted" style="padding:14px 0">Aucune demande envoyée pour le moment.</div> }
+            @if (restockRequests().length === 0) { <div class="pf-note">Aucune demande envoyée pour le moment.</div> }
           </pf-card>
         </div>
       }
@@ -100,7 +100,7 @@
                     <td><strong>{{ a.id }}</strong></td>
                     <td>{{ a.med }}</td>
                     <td>{{ a.service }}</td>
-                    <td><strong style="color:var(--blue)">{{ a.reste }}</strong></td>
+                    <td><strong class="pf-accent">{{ a.reste }}</strong></td>
                     <td class="muted">{{ a.quand }}</td>
                     <td><span class="chip chip-red">Active</span></td>
                   </tr>
@@ -110,13 +110,13 @@
                     <td><strong>{{ h.id }}</strong></td>
                     <td>{{ h.med }}</td>
                     <td>{{ h.service }}</td>
-                    <td><strong style="color:var(--blue)">{{ h.reste }}</strong></td>
+                    <td><strong class="pf-accent">{{ h.reste }}</strong></td>
                     <td class="muted">{{ h.quand }}</td>
                     <td><span class="chip chip-green">Résolue</span></td>
                   </tr>
                 }
                 @if (alertes().length === 0 && alertHistory().length === 0) {
-                  <tr><td colspan="6" class="muted" style="text-align:center;padding:16px 0">Aucun historique d'alerte.</td></tr>
+                  <tr><td colspan="6" class="muted pf-td-empty">Aucun historique d'alerte.</td></tr>
                 }
               </tbody>
             </table>
@@ -140,10 +140,10 @@
                     <button class="btn btn-green btn-sm" (click)="acceptPartner(p.id)">Accepter</button>
                     <button class="btn btn-ghost btn-sm" (click)="rejectPartner(p.id)">Rejeter</button>
                   }
-                  <button class="btn btn-ghost btn-sm" style="color:var(--red)" title="Retirer" (click)="removePartner(p.id)"><nv-icon name="x" [size]="14"/></button>
+                  <button class="btn btn-ghost btn-sm btn-danger" title="Retirer" (click)="removePartner(p.id)"><nv-icon name="x" [size]="14"/></button>
                 </div>
               }
-              @if (pharmacyPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucune pharmacie partenaire.</div> }
+              @if (pharmacyPartners().length === 0) { <div class="pf-note">Aucune pharmacie partenaire.</div> }
             </pf-card>
             <pf-card title="Distributeurs connectés">
               @for (d of distributorPartners(); track d.id) {
@@ -155,10 +155,10 @@
                     <button class="btn btn-green btn-sm" (click)="acceptPartner(d.id)">Accepter</button>
                     <button class="btn btn-ghost btn-sm" (click)="rejectPartner(d.id)">Rejeter</button>
                   }
-                  <button class="btn btn-ghost btn-sm" style="color:var(--red)" title="Retirer" (click)="removePartner(d.id)"><nv-icon name="x" [size]="14"/></button>
+                  <button class="btn btn-ghost btn-sm btn-danger" title="Retirer" (click)="removePartner(d.id)"><nv-icon name="x" [size]="14"/></button>
                 </div>
               }
-              @if (distributorPartners().length === 0) { <div class="muted" style="padding:14px 0">Aucun distributeur enregistré.</div> }
+              @if (distributorPartners().length === 0) { <div class="pf-note">Aucun distributeur enregistré.</div> }
             </pf-card>
           </div>
         </div>
@@ -174,12 +174,12 @@
                 @for (m of critMeds(); track m.medId) {
                   <tr>
                     <td><div class="pf-medname">{{ m.name }}</div></td>
-                    <td><strong style="font-family:'Montserrat';color:var(--blue)">{{ m.available }}</strong> <span class="muted">u.</span></td>
+                    <td><strong class="pf-num">{{ m.available }}</strong> <span class="muted">u.</span></td>
                     <td><span class="chip chip-blue"><nv-icon name="shield" [size]="13"/> Renforcé</span></td>
                     <td><pf-tag [s]="critTag(m.s)">{{ critLabel(m.s) }}</pf-tag></td>
                   </tr>
                 }
-                @if (critMeds().length === 0) { <tr><td colspan="4" class="muted" style="text-align:center;padding:16px 0">Aucun médicament critique suivi.</td></tr> }
+                @if (critMeds().length === 0) { <tr><td colspan="4" class="muted pf-td-empty">Aucun médicament critique suivi.</td></tr> }
               </tbody>
             </table>
           </pf-card>
@@ -199,12 +199,12 @@
                   <tr>
                     <td class="muted">{{ o.pra || '—' }}</td>
                     <td><div class="pf-medname">{{ o.medicine }}</div></td>
-                    <td><strong style="font-family:'Montserrat';color:var(--blue)">{{ o.quantity }}</strong></td>
+                    <td><strong class="pf-num">{{ o.quantity }}</strong></td>
                     <td><pf-tag [s]="praUrgencyTag(o.urgency)">{{ o.urgency }}</pf-tag></td>
                     <td><span class="chip" [class.chip-green]="o.status === 'resolved' || o.status === 'received'" [class.chip-amber]="o.status === 'pending'" [class.chip-red]="o.status === 'rejected'">{{ praStatusLabel(o.status) }}{{ o.delivery_date ? ' · ' + o.delivery_date : '' }}</span></td>
                   </tr>
                 }
-                @if (praOrders().length === 0) { <tr><td colspan="5" class="muted" style="text-align:center;padding:16px 0">Aucune commande institutionnelle.</td></tr> }
+                @if (praOrders().length === 0) { <tr><td colspan="5" class="muted pf-td-empty">Aucune commande institutionnelle.</td></tr> }
               </tbody>
             </table>
           </pf-card>
@@ -222,9 +222,9 @@
             <button type="button" class="pf-modal-close" (click)="signalModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="s-field" style="margin:0"><label>Médicament concerné *</label><input #sMed required placeholder="Nom du médicament"/></div>
-            <div class="pf-fieldrow" style="margin:0">
-              <div class="s-field" style="margin:0"><label>Service demandeur *</label>
+            <div class="s-field"><label>Médicament concerné *</label><input #sMed required placeholder="Nom du médicament"/></div>
+            <div class="pf-fieldrow">
+              <div class="s-field"><label>Service demandeur *</label>
                 <select #sSrv required>
                   <option value="Urgences">Urgences</option>
                   <option value="Réanimation">Réanimation</option>
@@ -232,7 +232,7 @@
                   <option value="Pharmacie centrale">Pharmacie centrale</option>
                 </select>
               </div>
-              <div class="s-field" style="margin:0"><label>Quantité restante *</label><input #sQty required type="number" min="0" placeholder="Ex: 5"/></div>
+              <div class="s-field"><label>Quantité restante *</label><input #sQty required type="number" min="0" placeholder="Ex: 5"/></div>
             </div>
           </div>
           <div class="pf-modal-foot">
@@ -251,13 +251,13 @@
             <button type="button" class="pf-modal-close" (click)="connectModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="s-field" style="margin:0"><label>Type de partenaire *</label>
+            <div class="s-field"><label>Type de partenaire *</label>
               <select #cType required>
                 <option value="Pharmacie">Pharmacie d'officine</option>
                 <option value="Distributeur">Distributeur / Grossiste</option>
               </select>
             </div>
-            <div class="s-field" style="margin:0"><label>Code d'identification ou Email *</label><input #cCode required placeholder="Ex: PH-12345 ou contact@pharma.com"/></div>
+            <div class="s-field"><label>Code d'identification ou Email *</label><input #cCode required placeholder="Ex: PH-12345 ou contact@pharma.com"/></div>
           </div>
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="connectModal.set(false)">Annuler</button>
@@ -275,22 +275,22 @@
             <button type="button" class="pf-modal-close" (click)="supplierModal.set(null)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="pf-li" style="padding:0;border:none;margin-bottom:8px">
+            <div class="pf-li pf-li-flat">
               <span class="pf-liic {{ a.niveau === 'crit' ? 'red' : 'amber' }}"><nv-icon name="alert" [size]="18"/></span>
               <div class="pf-libody"><strong>{{ a.med }}</strong><span>{{ a.service }} · {{ a.reste }} restant</span></div>
             </div>
 
-            <div class="s-field" style="margin:0">
-              <label>Fournisseurs à solliciter * <span class="muted" style="font-weight:400">— stock lu chez chaque fournisseur</span></label>
+            <div class="s-field">
+              <label>Fournisseurs à solliciter * <span class="muted">— stock lu chez chaque fournisseur</span></label>
               @if (suppliersLoading()) {
-                <div class="muted" style="padding:10px 0"><span class="pf-spin"></span> Recherche des fournisseurs…</div>
+                <div class="pf-note-sm"><span class="pf-spin pf-spin-sm"></span> Recherche des fournisseurs…</div>
               }
               @for (d of suppliers(); track d.id) {
-                <label class="pf-li" style="padding:10px 0;cursor:pointer">
-                  <input type="checkbox" [checked]="selectedSuppliers().has(d.id)" (change)="toggleSupplier(d.id)" [disabled]="alreadyAsked(a).has(d.id)" style="width:18px;height:18px;accent-color:var(--green)"/>
+                <label class="pf-li pf-li-pick">
+                  <input type="checkbox" [checked]="selectedSuppliers().has(d.id)" (change)="toggleSupplier(d.id)" [disabled]="alreadyAsked(a).has(d.id)" class="pf-check"/>
                   <span class="pf-liic {{ d.has_stock ? 'green' : '' }}"><nv-icon name="truck" [size]="16"/></span>
                   <div class="pf-libody">
-                    <strong>{{ d.name }} @if (d.is_partner) { <span class="chip chip-blue" style="margin-left:6px">Partenaire</span> }</strong>
+                    <strong>{{ d.name }} @if (d.is_partner) { <span class="chip chip-blue chip-inline">Partenaire</span> }</strong>
                     <span>{{ d.kind }} · {{ d.city }}</span>
                   </div>
                   @if (alreadyAsked(a).has(d.id)) {
@@ -302,12 +302,12 @@
                   }
                 </label>
               }
-              @if (!suppliersLoading() && suppliers().length === 0) { <div class="muted" style="padding:10px 0">Aucun fournisseur enregistré.</div> }
+              @if (!suppliersLoading() && suppliers().length === 0) { <div class="pf-note-sm">Aucun fournisseur enregistré.</div> }
             </div>
 
-            <div class="pf-fieldrow" style="margin:0">
-              <div class="s-field" style="margin:0"><label>Quantité souhaitée *</label><input #dQty required type="number" min="1" value="50"/></div>
-              <div class="s-field" style="margin:0"><label>Message</label><input #dMsg placeholder="Ex : urgence réanimation"/></div>
+            <div class="pf-fieldrow">
+              <div class="s-field"><label>Quantité souhaitée *</label><input #dQty required type="number" min="1" value="50"/></div>
+              <div class="s-field"><label>Message</label><input #dMsg placeholder="Ex : urgence réanimation"/></div>
             </div>
           </div>
           <div class="pf-modal-foot">
@@ -328,10 +328,10 @@
             <button type="button" class="pf-modal-close" (click)="praModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="s-field" style="margin:0"><label>Médicament *</label><input #oMed required placeholder="Nom du médicament (catalogue)"/></div>
-            <div class="pf-fieldrow" style="margin:0">
-              <div class="s-field" style="margin:0"><label>Quantité *</label><input #oQty required type="number" min="1" placeholder="Ex : 200"/></div>
-              <div class="s-field" style="margin:0"><label>Urgence *</label>
+            <div class="s-field"><label>Médicament *</label><input #oMed required placeholder="Nom du médicament (catalogue)"/></div>
+            <div class="pf-fieldrow">
+              <div class="s-field"><label>Quantité *</label><input #oQty required type="number" min="1" placeholder="Ex : 200"/></div>
+              <div class="s-field"><label>Urgence *</label>
                 <select #oUrg required>
                   <option value="normal">Normale</option>
                   <option value="urgent">Urgente</option>
@@ -339,8 +339,8 @@
                 </select>
               </div>
             </div>
-            <div class="s-field" style="margin:0"><label>Service demandeur</label><input #oSrv placeholder="Ex : Réanimation"/></div>
-            <div class="s-field" style="margin:0"><label>Notes</label><textarea #oNotes rows="2" placeholder="Précisions…"></textarea></div>
+            <div class="s-field"><label>Service demandeur</label><input #oSrv placeholder="Ex : Réanimation"/></div>
+            <div class="s-field"><label>Notes</label><textarea #oNotes rows="2" placeholder="Précisions…"></textarea></div>
           </div>
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="praModal.set(false)">Annuler</button>

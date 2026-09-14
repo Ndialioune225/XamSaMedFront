@@ -1,1 +1,4 @@
-/* hopital — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../../styles.css";
+/* ===================== HÔPITAL ===================== */
+:host { @apply contents; }
+/* La page n'utilise que les primitives communes (src/styles.css). */

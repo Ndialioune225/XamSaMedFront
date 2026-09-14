@@ -1,11 +1,14 @@
 import {
-  AfterViewInit, ChangeDetectionStrategy, Component, ElementRef,
-  OnDestroy, inject, signal, computed,
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef,
+  afterNextRender, computed, inject, signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Icon } from '../../components/icon/icon';
 import { Logo } from '../../components/logo/logo';
 import { FEATURES } from '../../data/mock-data';
+
+interface ContactForm { nom: string; email: string; tel: string; profil: string; message: string; }
+const EMPTY_FORM: ContactForm = { nom: '', email: '', tel: '', profil: 'Patient / Accompagnant', message: '' };
 
 /* ============================================================
    XamSaMed — Site vitrine (public)
@@ -20,10 +23,10 @@ import { FEATURES } from '../../data/mock-data';
   styleUrl: './site.css',
   host: { '(window:scroll)': 'onScroll()' },
 })
-export class SiteVitrine implements AfterViewInit, OnDestroy {
+export class SiteVitrine {
   private readonly router = inject(Router);
-  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
-  private io?: IntersectionObserver;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly scrolled = signal(false);
   readonly menuOpen = signal(false);
@@ -31,12 +34,14 @@ export class SiteVitrine implements AfterViewInit, OnDestroy {
   readonly faqOpen = signal(0);
   readonly sent = signal(false);
   readonly newsOk = signal(false);
+  /** Message d'information affiché en pied de page (mentions légales…). */
+  readonly notice = signal<string | null>(null);
 
   readonly features = FEATURES;
   readonly currentFeature = computed(() => this.features[this.tab()]);
 
-  form = { nom: '', email: '', tel: '', profil: 'Patient / Accompagnant', message: '' };
-  newsMail = '';
+  readonly form = signal<ContactForm>({ ...EMPTY_FORM });
+  readonly newsMail = signal('');
 
   readonly navLinks: [string, string][] = [
     ['Fonctionnalités', '#features'], ['Comment ça marche ?', '#how'], //['Technologie', '#tech'],
@@ -98,19 +103,21 @@ export class SiteVitrine implements AfterViewInit, OnDestroy {
   ];
   readonly profilOptions = ['Patient / Accompagnant', 'Pharmacien', 'Distributeur / Grossiste', 'Hôpital', 'Responsable santé publique', 'Autre'];
 
-  onScroll(): void { this.scrolled.set(window.scrollY > 20); }
-
-  ngAfterViewInit(): void {
-    const els = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('.fade-up'));
-    this.io = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('in'); this.io?.unobserve(e.target); }
-      });
-    }, { threshold: 0.12 });
-    els.forEach(e => this.io!.observe(e));
+  constructor() {
+    // Animation d'apparition au défilement : purement visuelle, hors cycle de
+    // détection (l'observer ajoute la classe `in` puis se désabonne).
+    afterNextRender(() => {
+      const io = new IntersectionObserver(entries => {
+        for (const e of entries) {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        }
+      }, { threshold: 0.12 });
+      this.host.nativeElement.querySelectorAll<HTMLElement>('.fade-up').forEach(el => io.observe(el));
+      this.destroyRef.onDestroy(() => io.disconnect());
+    });
   }
 
-  ngOnDestroy(): void { this.io?.disconnect(); }
+  onScroll(): void { this.scrolled.set(window.scrollY > 20); }
 
   go(hash: string): void {
     if (hash === '#top') { window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -123,12 +130,19 @@ export class SiteVitrine implements AfterViewInit, OnDestroy {
   firstWord(s: string): string { return s.split(' ')[0]; }
   stepNum(i: number): string { return String(i + 1).padStart(2, '0'); }
   val(e: Event): string { return (e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value; }
+  setField(key: keyof ContactForm, e: Event): void {
+    const value = this.val(e);
+    this.form.update(f => ({ ...f, [key]: value }));
+  }
 
   submitContact(e: Event): void { e.preventDefault(); this.sent.set(true); }
   resetContact(): void {
     this.sent.set(false);
-    this.form = { nom: '', email: '', tel: '', profil: 'Patient / Accompagnant', message: '' };
+    this.form.set({ ...EMPTY_FORM });
   }
   subscribe(e: Event): void { e.preventDefault(); this.newsOk.set(true); }
-  mentionsLegales(e: Event): void { e.preventDefault(); alert('Les mentions légales seront disponibles prochainement.'); }
+  mentionsLegales(e: Event): void {
+    e.preventDefault();
+    this.notice.set('Les mentions légales seront disponibles prochainement.');
+  }
 }

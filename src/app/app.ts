@@ -1,19 +1,17 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth/auth';
 
 @Component({
   selector: 'app-root',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
-export class App implements OnInit {
-  protected title = 'xamsamed';
-  private readonly auth = inject(AuthService);
-
-  ngOnInit(): void {
-    // Valide la session persistée auprès du backend (best-effort, sans bloquer).
-    this.auth.restoreSession();
+export class App {
+  constructor() {
+    // Valide la session persistée auprès du backend (best-effort, sans bloquer le rendu).
+    inject(AuthService).restoreSession();
   }
 }

@@ -1,1 +1,14 @@
-/* profile — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../../styles.css";
+/* ===================== PROFIL (patient / officine) ===================== */
+:host { @apply contents; }
+.pf-profhead { @apply flex gap-4 items-center mb-5; }
+.pf-profhead h3 { @apply text-[20px]; }
+.pf-roleic.lg { @apply w-[60px] h-[60px] rounded-2xl; }
+.pf-proffield { @apply flex justify-between py-[13px] border-b border-gray-line; }
+.pf-proffield .muted { @apply text-[14px]; }
+.pf-proffield strong { @apply font-title text-[14px] text-blue text-right; }
+.pf-profacts { @apply flex gap-2.5 mt-[18px] flex-wrap; }
+.pf-qr { @apply grid grid-cols-[160px_1fr] gap-6 items-center; }
+.pf-qrcode { @apply w-40 h-40 rounded-md border border-gray-line p-3.5 bg-white; }
+.pf-qr p { @apply text-[14px] mb-3.5; }
+@media (max-width: 1100px) { .pf-qr { @apply grid-cols-1; } }

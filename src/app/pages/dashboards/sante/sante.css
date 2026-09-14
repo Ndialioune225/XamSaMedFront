@@ -1,1 +1,14 @@
-/* sante — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../../styles.css";
+/* ===================== SANTÉ PUBLIQUE — vue nationale & administration ===================== */
+:host { @apply contents; }
+.pf-rank { @apply bg-blue text-white font-title font-extrabold; }
+.pf-reports { @apply mb-[17px]; }
+.pf-reports .pf-staticon { @apply mb-3.5; }
+.pf-reports h3 { @apply text-[16px]; }
+.pf-reports p { @apply text-[13.5px] mt-1 mb-3.5; }
+.pf-reportfoot { @apply flex justify-between items-center; }
+.pf-keystats { @apply mt-1; }
+.pf-keystat { @apply py-1; }
+.pf-keystat .pf-staticon { @apply mb-2.5; }
+.pf-keystat strong { @apply block font-title text-[22px] text-blue; }
+.pf-keystat .muted { @apply text-[13px]; }

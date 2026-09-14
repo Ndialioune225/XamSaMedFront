@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -8,6 +9,7 @@ import { PharmacyService } from '../../../services/pharmacy/pharmacy';
 import { MedicineService } from '../../../services/medicines/medicines';
 import { AvailabilityRow, DemandeRow } from '../../../interfaces/models';
 import { AuthService } from '../../../services/auth/auth';
+import { ApiErrorBody } from '../../../interfaces/api';
 
 /* Demandes ciblées reçues par le pharmacien : accepter / orienter / retirer (API réelle). */
 @Component({
@@ -36,6 +38,10 @@ export class PharmaDemandes {
   readonly orientOptions = signal<AvailabilityRow[]>([]);
   readonly orientLoading = signal(false);
 
+  private apiError(e: HttpErrorResponse, fallback: string): string {
+    return (e.error as ApiErrorBody | null)?.message ?? fallback;
+  }
+
   typeIcon(type: string): string { return type === 'Hôpital' ? 'hospital' : type === 'Patient' ? 'user' : 'pill'; }
   urg(u: string): string { return u === 'Critique' ? 'crit' : u === 'Élevé' ? 'low' : 'new'; }
   statusLabel(s: string): string {
@@ -45,7 +51,7 @@ export class PharmaDemandes {
   accept(id: number): void {
     this.pharmacy.acceptDemande(id).subscribe({
       next: () => { this.platform.notify('Demande acceptée et confirmée', 'ok'); this.changed.emit(); },
-      error: (e: any) => this.platform.notify(e?.error?.message ?? 'Échec de l’acceptation', 'alert'),
+      error: (e: HttpErrorResponse) => this.platform.notify(this.apiError(e, 'Échec de l’acceptation'), 'alert'),
     });
   }
 
@@ -67,14 +73,14 @@ export class PharmaDemandes {
   doOrient(d: DemandeRow, p: AvailabilityRow): void {
     this.pharmacy.orientDemande(d.id, p.structureId).subscribe({
       next: () => { this.orient.set(null); this.platform.notify('Patient orienté vers ' + p.pharmacy, 'info'); this.changed.emit(); },
-      error: (e: any) => this.platform.notify(e?.error?.message ?? 'Échec de l’orientation', 'alert'),
+      error: (e: HttpErrorResponse) => this.platform.notify(this.apiError(e, 'Échec de l’orientation'), 'alert'),
     });
   }
 
   collect(id: number): void {
     this.pharmacy.collectDemande(id).subscribe({
       next: () => { this.platform.notify('Retrait finalisé', 'ok'); this.changed.emit(); },
-      error: (e: any) => this.platform.notify(e?.error?.message ?? 'Échec de la finalisation', 'alert'),
+      error: (e: HttpErrorResponse) => this.platform.notify(this.apiError(e, 'Échec de la finalisation'), 'alert'),
     });
   }
 }

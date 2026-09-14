@@ -1,1 +1,8 @@
-/* bar — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../styles.css";
+:host { @apply contents; }
+.pf-bar { @apply h-2 rounded-[6px] bg-gray-bg overflow-hidden flex-1; }
+.pf-barfill { @apply block h-full rounded-[6px]; }
+.pf-barfill.green { @apply bg-green; }
+.pf-barfill.amber { @apply bg-amber; }
+.pf-barfill.red { @apply bg-red; }
+.pf-barfill.blue { @apply bg-blue; }

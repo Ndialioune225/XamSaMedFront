@@ -9,10 +9,13 @@ import { ZoneMap } from '../../../components/zone-map/zone-map';
 import { PlatformState } from '../../../services/platform/platform';
 import { PublicHealthService } from '../../../services/public-health/public-health';
 import { AdminService } from '../../../services/admin/admin';
-import { ApiOverview } from '../../../interfaces/api';
+import { ApiAdminUser, ApiOverview, ApiReport, ApiStructure } from '../../../interfaces/api';
 import { Tension, ZoneInfo } from '../../../interfaces/models';
 
 type BarTone = 'green' | 'amber' | 'red' | 'blue';
+
+/** Rapport enrichi de son libellé d'état et de la couleur du tag. */
+interface ReportRow extends ApiReport { statusLabel: string; s: string; }
 
 /* ============================================================
    SANTÉ PUBLIQUE — vue nationale, zones, tensions, rapports (API réelle)
@@ -33,8 +36,8 @@ export class SanteDash {
   readonly loading = signal(true);
 
   // --- Administration ---
-  readonly users = signal<any[]>([]);
-  readonly structures = signal<any[]>([]);
+  readonly users = signal<ApiAdminUser[]>([]);
+  readonly structures = signal<ApiStructure[]>([]);
   readonly userModal = signal(false);
   readonly structureModal = signal(false);
   readonly sel = signal<string | null>(null);
@@ -49,7 +52,7 @@ export class SanteDash {
   readonly tensionMid = computed(() => this.tension().filter(t => t.pct > 40).length);
   readonly sortedZones = computed(() => [...this.zones()].sort((a, b) => b.ruptures - a.ruptures));
 
-  readonly reports = signal<any[]>([]);
+  readonly reports = signal<ReportRow[]>([]);
   readonly keyStats = computed<readonly [string, string, string][]>(() => [
     ['Médicaments en tension', String(this.overview().medicines_in_tension), 'pill'],
     ['Zones critiques actives', String(this.critZones()), 'pin'],
@@ -114,7 +117,7 @@ export class SanteDash {
   exportReport(reportId?: number): void {
     const report = reportId
       ? this.reports().find(item => item.id === reportId)
-      : this.reports().find(item => item.status === 'Prêt');
+      : this.reports().find(item => item.status === 'completed');
     if (!report) {
       this.platform.notify('Aucun rapport prêt à exporter', 'alert');
       return;
@@ -153,9 +156,9 @@ export class SanteDash {
 
   private loadReports(): void {
     this.ph.reports().subscribe({
-      next: reports => this.reports.set(reports.map(report => ({
+      next: reports => this.reports.set(reports.map((report): ReportRow => ({
         ...report,
-        status: report.status === 'completed' ? 'Prêt' : report.status === 'generating' ? 'En cours' : 'Échec',
+        statusLabel: report.status === 'completed' ? 'Prêt' : report.status === 'generating' ? 'En cours' : 'Échec',
         s: report.status === 'completed' ? 'ok' : 'low',
       }))),
     });

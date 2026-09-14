@@ -11,5 +11,7 @@ import { Icon } from '../icon/icon';
 })
 export class Logo {
   readonly light = input(false);
+  /** Sidebar repliée / écran étroit : n'affiche que la pastille. */
+  readonly compact = input(false);
   readonly clicked = output<void>();
 }

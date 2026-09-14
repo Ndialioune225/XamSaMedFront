@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin, map, switchMap, throwError } from 'rxjs';
 import { Icon } from '../../../components/icon/icon';
 import { Card } from '../../../components/card/card';
 import { PageHead } from '../../../components/page-head/page-head';
@@ -12,11 +13,15 @@ import { MedicineService } from '../../../services/medicines/medicines';
 import { AuthService } from '../../../services/auth/auth';
 import { StructureService } from '../../../services/structures/structures';
 import { DemandeRow, StockRow } from '../../../interfaces/models';
-import { ApiRestockRequest, ApiSupplier } from '../../../interfaces/api';
+import { ApiErrorBody, ApiGroupedAlert, ApiPrescription, ApiRestockRequest, ApiSupplier } from '../../../interfaces/api';
 import { PharmaDemandes } from '../pharma-demandes/pharma-demandes';
 import { SimpleProfile } from '../profile/profile';
 
 type BarTone = 'green' | 'amber' | 'red' | 'blue';
+
+/** Ligne de l'historique des mouvements (vue). */
+interface MovementRow { id: number; date: string; type: string; medName: string; qty: number; newStock: number; user: string; }
+const EMPTY_SET: ReadonlySet<number> = new Set<number>();
 
 /* ============================================================
    PHARMACIEN — tableau de bord, stock, alertes, demandes (API réelle)
@@ -54,16 +59,27 @@ export class PharmaDash {
   // Suivi des demandes envoyées (en attente / livraison planifiée / rejetée).
   readonly restockRequests = signal<ApiRestockRequest[]>([]);
   readonly pendingRequests = computed(() => this.restockRequests().filter(r => r.status === 'pending'));
+  /** Fournisseurs déjà sollicités (demande en attente), indexés par médicament — calculé une fois par changement. */
+  readonly askedByMedicine = computed(() => {
+    const index = new Map<number, Set<number>>();
+    for (const r of this.pendingRequests()) {
+      if (r.medicine_id === null || !r.distributor_id) continue;
+      let set = index.get(r.medicine_id);
+      if (!set) { set = new Set(); index.set(r.medicine_id, set); }
+      set.add(r.distributor_id);
+    }
+    return index;
+  });
 
   // Ordonnances numériques reçues
-  readonly prescriptions = signal<any[]>([]);
-  readonly processModal = signal<any | null>(null);
+  readonly prescriptions = signal<ApiPrescription[]>([]);
+  readonly processModal = signal<ApiPrescription | null>(null);
 
   // Alertes groupées reçues (recherches patient)
-  readonly groupedAlerts = signal<any[]>([]);
+  readonly groupedAlerts = signal<ApiGroupedAlert[]>([]);
 
-  // Historique (mock)
-  readonly history = signal<any[]>([]);
+  // Historique des mouvements (traçabilité)
+  readonly history = signal<MovementRow[]>([]);
 
   readonly crit = computed(() => this.stock().filter(s => s.s === 'crit' || s.s === 'out'));
   readonly alerts = computed(() => this.stock().filter(s => s.s !== 'ok'));
@@ -76,12 +92,13 @@ export class PharmaDash {
   readonly profilFields = computed<readonly [string, string][]>(() => {
     const u = this.auth.user();
     if (!u) return [];
-    const meta = u.profile_meta as any || {};
+    const meta = u.profile_meta ?? {};
+    const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
     return [
-      ['Titulaire', meta.titulaire || 'Non renseigné'],
+      ['Titulaire', str(meta['titulaire']) ?? 'Non renseigné'],
       ['Téléphone', u.phone || '+221 33 000 00 00'],
       ['Email', u.email || 'Non renseigné'],
-      ['Région', meta.region || 'Non renseignée'],
+      ['Région', str(meta['region']) ?? u.structure?.region ?? u.structure?.city ?? 'Non renseignée'],
     ];
   });
 
@@ -95,7 +112,7 @@ export class PharmaDash {
         this.stock.set(s);
         if (s.length) {
           forkJoin(s.map(stock => this.pharmacy.stockMovements(stock.stockId))).subscribe({
-            next: movements => this.history.set(movements.flat().map((movement: any) => ({
+            next: movements => this.history.set(movements.flat().map((movement): MovementRow => ({
               id: movement.id,
               date: movement.created_at ? new Date(movement.created_at).toLocaleString('fr-FR') : '',
               type: movement.type_label ?? movement.type,
@@ -114,6 +131,10 @@ export class PharmaDash {
     this.pharmacy.restockRequests().subscribe({ next: r => this.restockRequests.set(r), error: () => { /* ignore */ } });
     this.pharmacy.prescriptions().subscribe({ next: p => this.prescriptions.set(p), error: () => { /* ignore */ } });
     this.pharmacy.groupedAlerts().subscribe({ next: g => this.groupedAlerts.set(g), error: () => { /* ignore */ } });
+  }
+
+  private apiError(e: HttpErrorResponse, fallback: string): string {
+    return (e.error as ApiErrorBody | null)?.message ?? fallback;
   }
 
   pct(s: StockRow): number {
@@ -158,19 +179,16 @@ export class PharmaDash {
       this.platform.notify('Informations de référence invalides', 'alert');
       return;
     }
-    this.medicines.search(name.trim()).subscribe({
-      next: matches => {
+    this.medicines.search(name.trim()).pipe(
+      switchMap(matches => {
         const medicine = matches[0];
-        if (!medicine) {
-          this.platform.notify('Médicament introuvable dans le catalogue', 'alert');
-          return;
-        }
-        this.pharmacy.addStock(Number(medicine.id), quantity, threshold).subscribe({
-          next: () => { this.platform.notify(`${medicine.nom} a été ajouté au stock`, 'ok'); this.addRefModal.set(false); this.reload(); },
-          error: () => this.platform.notify('Cette référence existe peut-être déjà dans le stock', 'alert'),
-        });
-      },
-      error: () => this.platform.notify('Impossible de consulter le catalogue', 'alert'),
+        if (!medicine) return throwError(() => new Error('not_found'));
+        return this.pharmacy.addStock(Number(medicine.id), quantity, threshold).pipe(map(() => medicine));
+      }),
+    ).subscribe({
+      next: medicine => { this.platform.notify(`${medicine.nom} a été ajouté au stock`, 'ok'); this.addRefModal.set(false); this.reload(); },
+      error: (e: unknown) => this.platform.notify(
+        e instanceof Error && e.message === 'not_found' ? 'Médicament introuvable dans le catalogue' : 'Cette référence existe peut-être déjà dans le stock', 'alert'),
     });
   }
 
@@ -190,7 +208,7 @@ export class PharmaDash {
         this.sellModal.set(null);
         this.reload();
       },
-      error: (e: any) => this.platform.notify(e?.error?.message ?? 'Échec de la vente', 'alert'),
+      error: (e: HttpErrorResponse) => this.platform.notify(this.apiError(e, 'Échec de la vente'), 'alert'),
     });
   }
 
@@ -208,7 +226,7 @@ export class PharmaDash {
         this.adjustModal.set(null);
         this.reload();
       },
-      error: (e: any) => this.platform.notify(e?.error?.message ?? 'Échec de l\'ajustement', 'alert'),
+      error: (e: HttpErrorResponse) => this.platform.notify(this.apiError(e, 'Échec de l\'ajustement'), 'alert'),
     });
   }
 
@@ -233,8 +251,8 @@ export class PharmaDash {
   }
 
   /** Fournisseurs ayant déjà une demande en attente pour ce stock. */
-  alreadyAsked(s: StockRow): Set<number> {
-    return new Set(this.pendingRequests().filter(r => r.medicine_id === s.medId && r.distributor_id).map(r => r.distributor_id as number));
+  alreadyAsked(s: StockRow): ReadonlySet<number> {
+    return this.askedByMedicine().get(s.medId) ?? EMPTY_SET;
   }
 
   toggleSupplier(id: number): void {
@@ -264,7 +282,7 @@ export class PharmaDash {
         this.supplierModal.set(null);
         this.pharmacy.restockRequests().subscribe({ next: r => this.restockRequests.set(r), error: () => { /* ignore */ } });
       },
-      error: (e: any) => { this.sending.set(false); this.platform.notify(e?.error?.message ?? 'Échec de l’envoi de la demande', 'alert'); },
+      error: (e: HttpErrorResponse) => { this.sending.set(false); this.platform.notify(this.apiError(e, 'Échec de l’envoi de la demande'), 'alert'); },
     });
   }
 
@@ -276,9 +294,9 @@ export class PharmaDash {
   requestTag(status: string): string { return status === 'resolved' ? 'ok' : status === 'rejected' ? 'crit' : 'low'; }
 
   // --- Ordonnances numériques ---
-  openProcess(p: any): void { this.processModal.set(p); }
+  openProcess(p: ApiPrescription): void { this.processModal.set(p); }
 
-  downloadOrdo(p: any): void {
+  downloadOrdo(p: ApiPrescription): void {
     this.pharmacy.downloadPrescription(p.id).subscribe({
       next: blob => {
         const url = URL.createObjectURL(blob);
@@ -296,20 +314,20 @@ export class PharmaDash {
     const qty = parseInt(qtyInput, 10);
     if (!medName.trim() || isNaN(qty) || qty <= 0) { this.platform.notify('Médicament et quantité requis', 'alert'); return; }
     const price = priceInput ? Number(priceInput) : undefined;
-    this.medicines.search(medName.trim()).subscribe({
-      next: matches => {
+    this.medicines.search(medName.trim()).pipe(
+      switchMap(matches => {
         const med = matches[0];
-        if (!med) { this.platform.notify('Médicament introuvable dans le catalogue', 'alert'); return; }
-        this.pharmacy.processPrescription(p.id, Number(med.id), qty, price).subscribe({
-          next: () => { this.platform.notify('Ordonnance traitée — commande prête au retrait', 'ok'); this.processModal.set(null); this.reload(); },
-          error: () => this.platform.notify('Échec du traitement (stock insuffisant ?)', 'alert'),
-        });
-      },
-      error: () => this.platform.notify('Impossible de consulter le catalogue', 'alert'),
+        if (!med) return throwError(() => new Error('not_found'));
+        return this.pharmacy.processPrescription(p.id, Number(med.id), qty, price);
+      }),
+    ).subscribe({
+      next: () => { this.platform.notify('Ordonnance traitée — commande prête au retrait', 'ok'); this.processModal.set(null); this.reload(); },
+      error: (e: unknown) => this.platform.notify(
+        e instanceof Error && e.message === 'not_found' ? 'Médicament introuvable dans le catalogue' : 'Échec du traitement (stock insuffisant ?)', 'alert'),
     });
   }
 
-  rejectOrdo(p: any): void {
+  rejectOrdo(p: ApiPrescription): void {
     this.pharmacy.rejectPrescription(p.id, 'Ordonnance non traitable').subscribe({
       next: () => { this.platform.notify('Ordonnance rejetée', 'info'); this.reload(); },
       error: () => this.platform.notify('Échec du rejet', 'alert'),
@@ -317,7 +335,7 @@ export class PharmaDash {
   }
 
   // --- Alertes groupées ---
-  respondGrouped(a: any, available: boolean): void {
+  respondGrouped(a: ApiGroupedAlert, available: boolean): void {
     const qty = available ? (this.stock().find(s => s.medId === a.medicine_id)?.q ?? undefined) : undefined;
     this.pharmacy.respondGroupedAlert(a.response_id, available, qty).subscribe({
       next: () => { this.platform.notify(available ? 'Disponibilité transmise au patient' : 'Indisponibilité enregistrée', available ? 'ok' : 'info'); this.reload(); },

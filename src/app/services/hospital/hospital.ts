@@ -2,7 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiCriticalMedicine, ApiHospitalAlert, ApiInstitutionalOrder, ApiRestockRequest } from '../../interfaces/api';
+import {
+  ApiCriticalMedicine, ApiHospitalAlert, ApiHospitalDashboard, ApiInstitutionalOrder, ApiPartner, ApiPartnerCandidate, ApiRestockRequest,
+} from '../../interfaces/api';
 import { SendResult } from '../pharmacy/pharmacy';
 import { AlerteHop, CritMedRow, StockState } from '../../interfaces/models';
 import { formatWhen } from '../orders/orders';
@@ -67,16 +69,16 @@ export class HospitalService {
   }
 
   /** GET /hospital/dashboard — indicateurs du tableau de bord. */
-  dashboard(): Observable<any> {
-    return this.http.get<{ data: any }>(`${this.base}/hospital/dashboard`).pipe(
+  dashboard(): Observable<ApiHospitalDashboard> {
+    return this.http.get<{ data: ApiHospitalDashboard }>(`${this.base}/hospital/dashboard`).pipe(
       map(r => r.data ?? {}),
       catchError(() => of({})),
     );
   }
 
   /** GET /hospital/partners — partenaires connectés. */
-  partners(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/hospital/partners`).pipe(
+  partners(): Observable<ApiPartner[]> {
+    return this.http.get<{ data: ApiPartner[] }>(`${this.base}/hospital/partners`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
@@ -116,10 +118,10 @@ export class HospitalService {
   }
 
   /** GET /hospital/search-partners?q= — rechercher un partenaire. */
-  searchPartners(q: string, type?: string): Observable<any[]> {
+  searchPartners(q: string, type?: string): Observable<ApiPartnerCandidate[]> {
     const params: Record<string, string> = { q };
     if (type) params['type'] = type;
-    return this.http.get<{ data: any[] }>(`${this.base}/hospital/search-partners`, { params }).pipe(
+    return this.http.get<{ data: ApiPartnerCandidate[] }>(`${this.base}/hospital/search-partners`, { params }).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );

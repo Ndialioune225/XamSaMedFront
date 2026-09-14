@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { ApiAdminUser, ApiStructure } from '../../interfaces/api';
 
 /** Administration (réservé au rôle admin) : utilisateurs + structures. */
 @Injectable({ providedIn: 'root' })
@@ -11,8 +12,8 @@ export class AdminService {
 
   // ── Utilisateurs ──────────────────────────────────────────────
   /** GET /admin/users */
-  users(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/admin/users`).pipe(
+  users(): Observable<ApiAdminUser[]> {
+    return this.http.get<{ data: ApiAdminUser[] }>(`${this.base}/admin/users`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
@@ -30,8 +31,8 @@ export class AdminService {
 
   // ── Structures ────────────────────────────────────────────────
   /** GET /structures (actives). */
-  structures(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/structures`).pipe(
+  structures(): Observable<ApiStructure[]> {
+    return this.http.get<{ data: ApiStructure[] }>(`${this.base}/structures`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );

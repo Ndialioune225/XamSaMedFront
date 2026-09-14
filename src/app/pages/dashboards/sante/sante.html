@@ -1,5 +1,5 @@
     @if (loading()) {
-      <div class="pf-loader"><span class="pf-spin"></span> Chargement des données…</div>
+      <div class="pf-loader"><span class="pf-spin pf-spin-sm"></span> Chargement des données…</div>
     } @else {
     @switch (section()) {
       @case ('home') {
@@ -18,20 +18,20 @@
               @defer (on viewport) {
                 <pf-zone-map [zones]="zones()" [selected]="sel()" (sel)="sel.set($event)"/>
               } @placeholder {
-                <div class="muted" style="min-height:300px;display:flex;align-items:center;justify-content:center">Chargement de la carte…</div>
+                <div class="pf-map-placeholder">Chargement de la carte…</div>
               }
             </pf-card>
             <pf-card title="Top médicaments en tension" sub="Niveau national">
               @for (t of topTension(); track t.nom) {
-                <div style="padding:11px 0;border-bottom:1px solid var(--gray-line)">
-                  <div style="display:flex;justify-content:space-between;margin-bottom:7px">
-                    <span class="pf-medname" style="font-size:13.5px">{{ t.nom }}</span>
-                    <strong style="font-family:'Montserrat';font-size:13px" [style.color]="t.pct > 50 ? '#cf4338' : 'var(--blue)'">{{ t.pct }}%</strong>
+                <div class="pf-progress">
+                  <div class="pf-progress-head">
+                    <span class="pf-medname">{{ t.nom }}</span>
+                    <strong class="pf-progress-pct pf-num-sm" [class.hot]="t.pct > 50">{{ t.pct }}%</strong>
                   </div>
                   <pf-bar [pct]="t.pct" [tone]="tone(t.pct)"/>
                 </div>
               }
-              @if (topTension().length === 0) { <div class="muted" style="padding:14px 0">Aucune tension nationale détectée.</div> }
+              @if (topTension().length === 0) { <div class="pf-note">Aucune tension nationale détectée.</div> }
             </pf-card>
           </div>
         </div>
@@ -45,18 +45,18 @@
               @defer (on viewport) {
                 <pf-zone-map [zones]="zones()" [selected]="sel()" (sel)="sel.set($event)"/>
               } @placeholder {
-                <div class="muted" style="min-height:300px;display:flex;align-items:center;justify-content:center">Chargement de la carte…</div>
+                <div class="pf-map-placeholder">Chargement de la carte…</div>
               }
             </pf-card>
             <pf-card title="Classement des zones" sub="Par nombre de ruptures">
               @for (z of sortedZones(); track z.nom; let i = $index) {
                 <div class="pf-li">
-                  <span class="pf-liic" style="background:var(--blue);color:#fff;font-family:'Montserrat';font-weight:800">{{ i + 1 }}</span>
+                  <span class="pf-liic pf-rank">{{ i + 1 }}</span>
                   <div class="pf-libody"><strong>{{ z.nom }}</strong><span>{{ z.ruptures }} ruptures signalées</span></div>
                   <pf-tag [s]="ztag(z.niveau)">{{ z.niveau }}</pf-tag>
                 </div>
               }
-              @if (sortedZones().length === 0) { <div class="muted" style="padding:14px 0">Aucune zone en tension.</div> }
+              @if (sortedZones().length === 0) { <div class="pf-note">Aucune zone en tension.</div> }
             </pf-card>
           </div>
         </div>
@@ -72,17 +72,17 @@
                 @for (t of tension(); track t.nom) {
                   <tr>
                     <td><div class="pf-medname">{{ t.nom }}</div></td>
-                    <td style="min-width:160px">
-                      <div style="display:flex;align-items:center;gap:10px">
+                    <td class="pf-td-bar lg">
+                      <div class="pf-progress-meta">
                         <pf-bar [pct]="t.pct" [tone]="tone(t.pct)"/>
-                        <strong style="font-family:'Montserrat';font-size:13px;color:var(--blue)">{{ t.pct }}%</strong>
+                        <strong class="pf-num pf-num-sm">{{ t.pct }}%</strong>
                       </div>
                     </td>
                     <td class="muted">{{ t.delai }}</td>
                     <td><pf-tag [s]="ttag(t.pct)">{{ tlabel(t.pct) }}</pf-tag></td>
                   </tr>
                 }
-                @if (tension().length === 0) { <tr><td colspan="4" class="muted" style="text-align:center;padding:16px 0">Aucune tension nationale détectée.</td></tr> }
+                @if (tension().length === 0) { <tr><td colspan="4" class="muted pf-td-empty">Aucune tension nationale détectée.</td></tr> }
               </tbody>
             </table>
           </pf-card>
@@ -94,26 +94,26 @@
           <pf-page-head title="Rapports et analyses" sub="Données consolidées sur les approvisionnements.">
             <button actions class="btn btn-green btn-sm" (click)="generateReport()"><nv-icon name="doc" [size]="16"/> Générer un rapport</button>
           </pf-page-head>
-          <div class="pf-cols3" style="margin-bottom: 17px;">
-            @for (r of reports(); track r.period) {
+          <div class="pf-cols3 pf-reports">
+            @for (r of reports(); track r.id) {
               <pf-card>
-                <span class="pf-staticon blue" style="margin-bottom:14px"><nv-icon name="doc" [size]="20"/></span>
-                <h3 style="font-size:16px">{{ r.period }}</h3>
-                <p class="muted" style="font-size:13.5px;margin:4px 0 14px">{{ r.type }}</p>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <pf-tag [s]="r.s">{{ r.status }}</pf-tag>
-                  <button class="btn btn-ghost btn-sm" [disabled]="r.status !== 'Prêt'" (click)="exportReport(r.id)">Consulter <nv-icon name="arrow" [size]="14"/></button>
+                <span class="pf-staticon blue"><nv-icon name="doc" [size]="20"/></span>
+                <h3>{{ r.period }}</h3>
+                <p class="muted">{{ r.type }}</p>
+                <div class="pf-reportfoot">
+                  <pf-tag [s]="r.s">{{ r.statusLabel }}</pf-tag>
+                  <button class="btn btn-ghost btn-sm" [disabled]="r.status !== 'completed'" (click)="exportReport(r.id)">Consulter <nv-icon name="arrow" [size]="14"/></button>
                 </div>
               </pf-card>
             }
           </div>
           <pf-card title="Statistiques clés" sub="Indicateurs nationaux de suivi">
-            <div class="pf-cols3" style="margin-top:4px">
+            <div class="pf-cols3 pf-keystats">
               @for (k of keyStats(); track k[0]) {
-                <div style="padding:4px 0">
-                  <span class="pf-staticon green" style="margin-bottom:10px"><nv-icon [name]="k[2]" [size]="18"/></span>
-                  <strong style="display:block;font-family:'Montserrat';font-size:22px;color:var(--blue)">{{ k[1] }}</strong>
-                  <span class="muted" style="font-size:13px">{{ k[0] }}</span>
+                <div class="pf-keystat">
+                  <span class="pf-staticon green"><nv-icon [name]="k[2]" [size]="18"/></span>
+                  <strong>{{ k[1] }}</strong>
+                  <span class="muted">{{ k[0] }}</span>
                 </div>
               }
             </div>
@@ -136,10 +136,10 @@
                     <td class="muted">{{ u.email }}</td>
                     <td><span class="chip chip-blue">{{ u.role }}</span></td>
                     <td class="muted">{{ u.structure?.name || '—' }}</td>
-                    <td style="text-align:right"><button class="btn btn-ghost btn-sm" style="color:var(--red)" (click)="deleteUser(u.id)">Désactiver</button></td>
+                    <td class="pf-td-right"><button class="btn btn-ghost btn-sm btn-danger" (click)="deleteUser(u.id)">Désactiver</button></td>
                   </tr>
                 }
-                @if (users().length === 0) { <tr><td colspan="5" class="muted" style="text-align:center;padding:16px 0">Aucun utilisateur.</td></tr> }
+                @if (users().length === 0) { <tr><td colspan="5" class="muted pf-td-empty">Aucun utilisateur.</td></tr> }
               </tbody>
             </table>
           </pf-card>
@@ -161,10 +161,10 @@
                     <td><span class="chip">{{ s.type }}</span></td>
                     <td class="muted">{{ s.city || '—' }}</td>
                     <td class="muted">{{ s.phone || '—' }}</td>
-                    <td style="text-align:right"><button class="btn btn-ghost btn-sm" style="color:var(--red)" (click)="deleteStructure(s.id)">Désactiver</button></td>
+                    <td class="pf-td-right"><button class="btn btn-ghost btn-sm btn-danger" (click)="deleteStructure(s.id)">Désactiver</button></td>
                   </tr>
                 }
-                @if (structures().length === 0) { <tr><td colspan="5" class="muted" style="text-align:center;padding:16px 0">Aucune structure.</td></tr> }
+                @if (structures().length === 0) { <tr><td colspan="5" class="muted pf-td-empty">Aucune structure.</td></tr> }
               </tbody>
             </table>
           </pf-card>
@@ -182,7 +182,7 @@
             <button type="button" class="pf-modal-close" (click)="generateModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="s-field" style="margin:0"><label>Période d'analyse *</label>
+            <div class="s-field"><label>Période d'analyse *</label>
               <select #gPeriod required>
                 <option value="Cette semaine">Cette semaine</option>
                 <option value="Ce mois-ci">Ce mois-ci</option>
@@ -190,7 +190,7 @@
                 <option value="Année en cours">Année en cours</option>
               </select>
             </div>
-            <div class="s-field" style="margin:0"><label>Type de rapport *</label>
+            <div class="s-field"><label>Type de rapport *</label>
               <select #gType required>
                 <option value="Synthèse nationale">Synthèse nationale</option>
                 <option value="Tensions critiques">Tensions critiques uniquement</option>
@@ -214,10 +214,10 @@
             <button type="button" class="pf-modal-close" (click)="userModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="s-field" style="margin:0"><label>Nom *</label><input #uName required placeholder="Nom complet"/></div>
-            <div class="s-field" style="margin:0"><label>Email *</label><input #uEmail required type="email" placeholder="email@exemple.sn"/></div>
-            <div class="pf-fieldrow" style="margin:0">
-              <div class="s-field" style="margin:0"><label>Rôle *</label>
+            <div class="s-field"><label>Nom *</label><input #uName required placeholder="Nom complet"/></div>
+            <div class="s-field"><label>Email *</label><input #uEmail required type="email" placeholder="email@exemple.sn"/></div>
+            <div class="pf-fieldrow">
+              <div class="s-field"><label>Rôle *</label>
                 <select #uRole required>
                   <option value="patient">Patient</option>
                   <option value="pharmacy_user">Pharmacien</option>
@@ -226,9 +226,9 @@
                   <option value="admin">Administrateur</option>
                 </select>
               </div>
-              <div class="s-field" style="margin:0"><label>Téléphone</label><input #uPhone placeholder="+221…"/></div>
+              <div class="s-field"><label>Téléphone</label><input #uPhone placeholder="+221…"/></div>
             </div>
-            <div class="s-field" style="margin:0"><label>Structure liée (ID, optionnel)</label>
+            <div class="s-field"><label>Structure liée (ID, optionnel)</label>
               <select #uStruct>
                 <option value="">Aucune</option>
                 @for (s of structures(); track s.id) { <option [value]="s.id">{{ s.name }} ({{ s.type }})</option> }
@@ -251,9 +251,9 @@
             <button type="button" class="pf-modal-close" (click)="structureModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="s-field" style="margin:0"><label>Nom *</label><input #stName required placeholder="Ex : Pharmacie du Centre"/></div>
-            <div class="pf-fieldrow" style="margin:0">
-              <div class="s-field" style="margin:0"><label>Type *</label>
+            <div class="s-field"><label>Nom *</label><input #stName required placeholder="Ex : Pharmacie du Centre"/></div>
+            <div class="pf-fieldrow">
+              <div class="s-field"><label>Type *</label>
                 <select #stType required>
                   <option value="pharmacy">Pharmacie</option>
                   <option value="hospital">Hôpital</option>
@@ -262,9 +262,9 @@
                   <option value="pra">PRA</option>
                 </select>
               </div>
-              <div class="s-field" style="margin:0"><label>Ville</label><input #stCity placeholder="Dakar"/></div>
+              <div class="s-field"><label>Ville</label><input #stCity placeholder="Dakar"/></div>
             </div>
-            <div class="s-field" style="margin:0"><label>Téléphone</label><input #stPhone placeholder="+221…"/></div>
+            <div class="s-field"><label>Téléphone</label><input #stPhone placeholder="+221…"/></div>
           </div>
           <div class="pf-modal-foot">
             <button type="button" class="btn btn-ghost btn-sm" (click)="structureModal.set(false)">Annuler</button>

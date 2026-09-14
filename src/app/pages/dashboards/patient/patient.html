@@ -4,9 +4,9 @@
           <pf-page-head title="Rechercher un médicament" sub="Trouvez où votre traitement est réellement disponible, en temps réel."/>
           <div class="pf-searchbar">
             <div class="pf-sbinput">
-              <nv-icon name="search" [size]="20" color="var(--gray-text)" style="flex:none"/>
+              <nv-icon name="search" [size]="20" color="var(--color-gray-text)"/>
               <input autofocus placeholder="Nom du médicament ou substance (ex. Morphine, Insuline…)" [value]="q()" (input)="onSearch($event)"/>
-              @if (q()) { <button (click)="clear()" style="color:var(--gray-text)"><nv-icon name="x" [size]="18"/></button> }
+              @if (q()) { <button type="button" class="pf-sbclear" (click)="clear()" aria-label="Effacer"><nv-icon name="x" [size]="18"/></button> }
             </div>
             <button class="btn btn-primary"><nv-icon name="qr" [size]="18"/> Scanner</button>
             <button class="btn btn-outline" (click)="prescriptionModal.set(true)"><nv-icon name="doc" [size]="18"/> Ordonnance</button>
@@ -14,7 +14,7 @@
 
           @if (!q()) {
             <div class="pf-suggest">
-              <span class="muted" style="font-size:13px;align-self:center;margin-right:4px">Recherches fréquentes :</span>
+              <span class="pf-suggest-label">Recherches fréquentes :</span>
               @for (s of suggestions; track s) {
                 <button class="pf-suggchip" (click)="setQuery(s)">{{ s }}</button>
               }
@@ -22,13 +22,13 @@
           }
 
           @if (q() && searching()) {
-            <div class="muted" style="padding:18px 4px">Recherche en cours…</div>
+            <div class="pf-searching">Recherche en cours…</div>
           }
 
           @if (q() && !searching() && results().length === 0) {
             <pf-card>
-              <div style="text-align:center;padding:30px;color:var(--gray-text)">
-                <nv-icon name="search" [size]="34" color="var(--gray)" style="margin-bottom:10px"/>
+              <div class="pf-empty">
+                <nv-icon name="search" [size]="34" color="var(--color-gray)"/>
                 <p>Aucun médicament trouvé pour « {{ q() }} ».</p>
               </div>
             </pf-card>
@@ -36,13 +36,13 @@
 
           @if (results().length > 0 && !active()) {
             @for (m of results(); track m.id) {
-              <button class="pf-result" (click)="active.set(m)" style="width:100%;text-align:left;cursor:pointer">
+              <button type="button" class="pf-result" (click)="active.set(m)">
                 <span class="pf-liic green"><nv-icon name="pill" [size]="20"/></span>
-                <div style="flex:1">
-                  <div class="pf-medname">{{ m.nom }} @if (m.crit) { <span class="chip chip-red" style="margin-left:6px">Critique</span> }</div>
+                <div class="pf-result-body">
+                  <div class="pf-medname">{{ m.nom }} @if (m.crit) { <span class="chip chip-red chip-inline">Critique</span> }</div>
                   <div class="pf-medsub">{{ m.dci }} · {{ m.forme }}</div>
                 </div>
-                <nv-icon name="chevron" [size]="18" color="var(--gray)"/>
+                <nv-icon name="chevron" [size]="18" color="var(--color-gray)"/>
               </button>
             }
           }
@@ -58,26 +58,26 @@
           <pf-page-head title="Mes réservations" sub="Suivez l'état de vos demandes et retraits."/>
           @if (resas().length === 0) {
             <pf-card>
-              <div style="text-align:center;padding:40px;color:var(--gray-text)">
-                <nv-icon name="cart" [size]="34" color="var(--gray)" style="margin-bottom:10px"/>
+              <div class="pf-empty">
+                <nv-icon name="cart" [size]="34" color="var(--color-gray)"/>
                 <p>Aucune réservation pour le moment.</p>
-                <button class="btn btn-green" style="margin-top:16px" (click)="section.set('search')">Rechercher un médicament</button>
+                <button class="btn btn-green" (click)="section.set('search')">Rechercher un médicament</button>
               </div>
             </pf-card>
           } @else {
-            <div class="pf-statgrid" style="grid-template-columns:1fr">
-              @for (r of resas(); track $index) {
-                <div class="card pf-li" style="padding:18px 22px">
+            <div class="pf-resalist">
+              @for (r of resas(); track r.orderId) {
+                <div class="card pf-li pf-resa">
                   <span class="pf-liic {{ r.s === 'ok' ? 'green' : r.s === 'out' ? 'red' : 'amber' }}"><nv-icon name="pill" [size]="20"/></span>
                   <div class="pf-libody">
                     <strong>{{ r.medName }}</strong>
                     <span>{{ r.pharmacyName }}</span>
                   </div>
-                  <div style="text-align:right">
+                  <div class="pf-resa-side">
                     <pf-tag [s]="r.s">{{ r.statut }}</pf-tag>
-                    <div class="pf-medsub" style="margin-top:6px">{{ r.quand }}</div>
+                    <div class="pf-medsub pf-resa-when">{{ r.quand }}</div>
                     @if (r.status === 'pending') {
-                      <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-top:8px" (click)="cancelResa(r.orderId)">Annuler</button>
+                      <button class="btn btn-ghost btn-sm btn-danger pf-resa-cancel" (click)="cancelResa(r.orderId)">Annuler</button>
                     }
                   </div>
                 </div>
@@ -102,16 +102,16 @@
             <button type="button" class="pf-modal-close" (click)="prescriptionModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <div class="s-field" style="margin:0"><label>Pharmacie destinataire *</label>
+            <div class="s-field"><label>Pharmacie destinataire *</label>
               <select #oPharm required>
                 <option value="">Sélectionnez une pharmacie</option>
                 @for (p of pharmacies(); track p.id) { <option [value]="p.id">{{ p.nom }}{{ p.ville ? ' — ' + p.ville : '' }}</option> }
               </select>
             </div>
-            <div class="s-field" style="margin:0"><label>Ordonnance (image ou PDF) *</label>
+            <div class="s-field"><label>Ordonnance (image ou PDF) *</label>
               <input type="file" accept="image/jpeg,image/png,application/pdf" (change)="onPrescriptionFile($event)" required/>
             </div>
-            <div class="s-field" style="margin:0"><label>Note (facultatif)</label>
+            <div class="s-field"><label>Note (facultatif)</label>
               <textarea #oNotes rows="3" placeholder="Précisions pour le pharmacien…"></textarea>
             </div>
           </div>
@@ -131,13 +131,13 @@
             <button type="button" class="pf-modal-close" (click)="groupedModal.set(false)"><nv-icon name="x" [size]="20"/></button>
           </div>
           <div class="pf-modal-body">
-            <p class="muted" style="font-size:13.5px">{{ groupedInfo()?.target_count || 0 }} pharmacie(s) de votre zone ont été alertées pour <strong>{{ groupedInfo()?.medicine }}</strong>. Les réponses arrivent au fil de l'eau.</p>
+            <p class="muted pf-intro">{{ groupedInfo()?.target_count || 0 }} pharmacie(s) de votre zone ont été alertées pour <strong>{{ groupedInfo()?.medicine }}</strong>. Les réponses arrivent au fil de l'eau.</p>
             @if (groupedStatus(); as st) {
-              <div class="pf-li" style="border:none;padding:6px 0">
+              <div class="pf-li pf-li-flat">
                 <div class="pf-libody"><strong>{{ st.response_count }} / {{ st.target_count }} réponses</strong><span>{{ st.pending_count }} en attente</span></div>
               </div>
-              @if (st.available?.length) {
-                <span class="muted" style="font-size:13px;font-weight:600;display:block;margin:6px 0">Pharmacies disponibles</span>
+              @if (st.available.length) {
+                <span class="pf-caption">Pharmacies disponibles</span>
                 @for (p of st.available; track p.structure_id) {
                   <div class="pf-li">
                     <span class="pf-liic green"><nv-icon name="pin" [size]="16"/></span>
@@ -146,15 +146,15 @@
                   </div>
                 }
               } @else {
-                <div class="muted" style="padding:10px 0;font-size:13.5px">Aucune pharmacie n'a encore confirmé de disponibilité.</div>
+                <div class="pf-note-sm">Aucune pharmacie n'a encore confirmé de disponibilité.</div>
               }
               @if (st.equivalents?.length) {
-                <span class="muted" style="font-size:13px;font-weight:600;display:block;margin:6px 0">Équivalents suggérés</span>
+                <span class="pf-caption">Équivalents suggérés</span>
                 @for (e of st.equivalents; track e.id) {
                   <div class="pf-li"><span class="pf-liic amber"><nv-icon name="pill" [size]="16"/></span><div class="pf-libody"><strong>{{ e.name }}</strong><span>{{ e.dosage }} · {{ e.form }}</span></div></div>
                 }
               }
-              @if (st.preventive_alert) { <p class="muted" style="font-size:12.5px;margin-top:8px">⚠ {{ st.preventive_alert }}</p> }
+              @if (st.preventive_alert) { <p class="muted pf-warn">⚠ {{ st.preventive_alert }}</p> }
             }
           </div>
           <div class="pf-modal-foot">

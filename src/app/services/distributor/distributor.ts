@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  ApiDestination, ApiIncomingRequest, ApiInstitutionalOrder, ApiRegionalDemand, ApiZone,
+  ApiDelivery, ApiDestination, ApiForecast, ApiIncomingRequest, ApiInstitutionalOrder, ApiPnaDashboard, ApiRegionalDemand, ApiZone,
   DistributorAlertsResponse, ShortageAlert,
 } from '../../interfaces/api';
 import { DemandeReg, ZoneInfo, ZoneLevel, DeliveryRow, DeliveryStatus } from '../../interfaces/models';
@@ -78,8 +78,8 @@ export class DistributorService {
   }
 
   /** GET /distributor/previsions — prévisions basées sur les données réelles. */
-  previsions(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/distributor/previsions`).pipe(
+  previsions(): Observable<ApiForecast[]> {
+    return this.http.get<{ data: ApiForecast[] }>(`${this.base}/distributor/previsions`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
@@ -119,7 +119,7 @@ export class DistributorService {
 
   /** GET /distributor/deliveries */
   deliveries(): Observable<DeliveryRow[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/distributor/deliveries`).pipe(
+    return this.http.get<{ data: ApiDelivery[] }>(`${this.base}/distributor/deliveries`).pipe(
       map(r => (r.data ?? []).map(toDeliveryRow)),
       catchError(() => of([])),
     );
@@ -182,8 +182,8 @@ export class DistributorService {
   }
 
   /** GET /pna/dashboard — supervision nationale. */
-  pnaDashboard(): Observable<any> {
-    return this.http.get<{ data: any }>(`${this.base}/pna/dashboard`).pipe(
+  pnaDashboard(): Observable<ApiPnaDashboard> {
+    return this.http.get<{ data: ApiPnaDashboard }>(`${this.base}/pna/dashboard`).pipe(
       map(r => r.data ?? {}),
       catchError(() => of({})),
     );
@@ -222,7 +222,6 @@ function toDemandeReg(d: ApiRegionalDemand): DemandeReg {
     zone: d.zone,
     medId: d.medicine_id,
     med: d.medicine,
-    vol: `~${Math.max(0, d.estimated_need)} u.`,
     need: Math.max(0, d.estimated_need),
     tension: asZoneLevel(d.tension),
     officines: d.officines_count,
@@ -232,7 +231,7 @@ function toDemandeReg(d: ApiRegionalDemand): DemandeReg {
   };
 }
 
-function toDeliveryRow(d: any): DeliveryRow {
+function toDeliveryRow(d: ApiDelivery & { status_label?: string }): DeliveryRow {
   return {
     id: String(d.id),
     zone: d.city ?? '—',
@@ -240,6 +239,6 @@ function toDeliveryRow(d: any): DeliveryRow {
     med: d.medicine ?? '—',
     qty: Number(d.quantity ?? 0),
     date: d.delivery_date ? String(d.delivery_date).slice(0, 10) : '',
-    status: d.status_label ?? d.status ?? 'Planifiée',
+    status: (d.status_label ?? d.status ?? 'Planifiée') as DeliveryStatus,
   };
 }

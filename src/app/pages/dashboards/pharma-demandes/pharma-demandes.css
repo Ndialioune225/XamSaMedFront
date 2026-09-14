@@ -1,1 +1,6 @@
-/* pharma-demandes — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../../styles.css";
+/* ===================== PHARMACIE — demandes ciblées ===================== */
+:host { @apply contents; }
+.pf-orient { @apply mt-4 border-t border-gray-line pt-3.5; }
+.pf-orient-title { @apply font-title font-bold text-blue text-[14px] mb-2.5; }
+.pf-orient-cancel { @apply mt-1.5; }

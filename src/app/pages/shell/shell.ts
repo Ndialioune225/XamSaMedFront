@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 import { Icon } from '../../components/icon/icon';
@@ -31,10 +32,16 @@ export class AppShell {
   private readonly auth = inject(AuthService);
   private readonly medicines = inject(MedicineService);
   private readonly notificationService = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly searchInput$ = new Subject<string>();
+  /** Point de rupture où la sidebar est toujours repliée (cf. shell.css). */
+  private readonly narrowQuery = window.matchMedia('(max-width: 860px)');
 
   readonly role = this.platform.role;
   readonly collapsed = signal(false);
+  readonly narrow = signal(this.narrowQuery.matches);
+  /** Sidebar réduite : choix de l'utilisateur ou écran étroit. */
+  readonly compact = computed(() => this.collapsed() || this.narrow());
   readonly notifOpen = signal(false);
   readonly profileOpen = signal(false);
   readonly sec = signal<string>('search');
@@ -64,7 +71,16 @@ export class AppShell {
   constructor() {
     const r = this.platform.role();
     if (!r) { this.router.navigateByUrl('/login'); }
-    else { this.sec.set(NAV[r][0].id); }
+    else {
+      // Reprend la section active avant le rechargement si elle existe encore dans la nav du rôle.
+      const saved = this.platform.restoreSection(r);
+      this.sec.set(saved && NAV[r].some(n => n.id === saved) ? saved : NAV[r][0].id);
+      // Persiste chaque changement, qu'il vienne de la sidebar ou d'un bouton du dashboard.
+      effect(() => { const role = this.role(); if (role) this.platform.saveSection(role, this.sec()); });
+    }
+    const onNarrow = (e: MediaQueryListEvent) => this.narrow.set(e.matches);
+    this.narrowQuery.addEventListener('change', onNarrow);
+    this.destroyRef.onDestroy(() => this.narrowQuery.removeEventListener('change', onNarrow));
     this.searchInput$.pipe(
       debounceTime(250),
       distinctUntilChanged(),
@@ -77,11 +93,12 @@ export class AppShell {
         this.searchLoading.set(true);
         return this.medicines.globalSearch(term);
       }),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe(results => {
       this.globalResults.set(results);
       this.searchLoading.set(false);
     });
-    if (r) this.notificationService.load(r).subscribe(notifications => this.notifications.set(notifications));
+    if (r) this.notificationService.load(r).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(notifications => this.notifications.set(notifications));
   }
 
   shortLabel(label: string): string { return label.split(' / ')[0]; }

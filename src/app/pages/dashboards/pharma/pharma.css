@@ -1,1 +1,4 @@
-/* pharma — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../../styles.css";
+/* ===================== PHARMACIE — tableau de bord, stock, alertes ===================== */
+:host { @apply contents; }
+/* La page n'utilise que les primitives communes (src/styles.css). */

@@ -16,9 +16,9 @@
 
       <div class="pf-loginright">
         <div class="pf-loginbox">
-          <span class="chip chip-green" style="margin-bottom:14px">Connexion sécurisée</span>
+          <span class="chip chip-green">Connexion sécurisée</span>
           <h2>Connectez-vous</h2>
-          <p class="muted" style="margin-bottom:24px">Choisissez un profil de démonstration ou saisissez vos identifiants. Le rôle de votre espace est déterminé par votre compte.</p>
+          <p class="muted pf-loginintro">Choisissez un profil de démonstration ou saisissez vos identifiants. Le rôle de votre espace est déterminé par votre compte.</p>
 
           @if (mode() === 'login') {
             <div class="pf-roles">
@@ -34,7 +34,7 @@
 
           <div class="pf-loginform">
             @if (info()) {
-              <div class="pf-loginerror" style="background:#e9f7ef;color:var(--green);border-color:var(--green)"><nv-icon name="checkC" [size]="16"/> {{ info() }}</div>
+              <div class="pf-loginerror ok"><nv-icon name="checkC" [size]="16"/> {{ info() }}</div>
             }
 
             @if (mode() === 'login') {
@@ -47,11 +47,11 @@
                 <div class="pf-loginerror"><nv-icon name="alert" [size]="16"/> {{ error() }}</div>
               }
 
-              <button class="btn btn-green btn-lg" style="width:100%;justify-content:center" (click)="login()" [disabled]="loading()">
+              <button class="btn btn-green btn-lg btn-block" (click)="login()" [disabled]="loading()">
                 @if (loading()) { Connexion en cours… } @else { Accéder à l'espace {{ firstWord(current().label) }} <nv-icon name="arrow" [size]="18"/> }
               </button>
 
-              <button type="button" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" (click)="gotoForgot()">Mot de passe oublié ?</button>
+              <button type="button" class="btn btn-ghost btn-sm btn-block pf-loginlink" (click)="gotoForgot()">Mot de passe oublié ?</button>
 
               <p class="pf-loginhint">Comptes de test : <strong>pharma&#64;xamsamed.test</strong> · <strong>pharma2&#64;xamsamed.test</strong> · <strong>pra&#64;xamsamed.test</strong> · <strong>admin&#64;xamsamed.test</strong> · mot de passe <strong>password123</strong></p>
             } @else if (mode() === 'forgot') {
@@ -61,23 +61,23 @@
                 <div class="pf-loginerror"><nv-icon name="alert" [size]="16"/> {{ error() }}</div>
               }
 
-              <button class="btn btn-green btn-lg" style="width:100%;justify-content:center" (click)="requestReset()" [disabled]="loading()">
+              <button class="btn btn-green btn-lg btn-block" (click)="requestReset()" [disabled]="loading()">
                 @if (loading()) { Envoi… } @else { Envoyer le code de réinitialisation }
               </button>
-              <button type="button" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" (click)="gotoLogin()">Retour à la connexion</button>
+              <button type="button" class="btn btn-ghost btn-sm btn-block pf-loginlink" (click)="gotoLogin()">Retour à la connexion</button>
             } @else {
-              <p class="muted" style="margin-bottom:14px">Un code a été envoyé à <strong>{{ email() }}</strong>. Saisissez-le avec votre nouveau mot de passe.</p>
-              <div class="s-field" style="margin-bottom:12px"><label>Code reçu</label><input type="text" inputmode="numeric" [value]="resetCode()" (input)="setResetCode($event)" placeholder="6 chiffres"/></div>
+              <p class="muted pf-resetintro">Un code a été envoyé à <strong>{{ email() }}</strong>. Saisissez-le avec votre nouveau mot de passe.</p>
+              <div class="s-field"><label>Code reçu</label><input type="text" inputmode="numeric" [value]="resetCode()" (input)="setResetCode($event)" placeholder="6 chiffres"/></div>
               <div class="s-field"><label>Nouveau mot de passe</label><input type="password" autocomplete="new-password" [value]="newPassword()" (input)="setNewPassword($event)" (keyup.enter)="doReset()" placeholder="••••••••"/></div>
 
               @if (error()) {
                 <div class="pf-loginerror"><nv-icon name="alert" [size]="16"/> {{ error() }}</div>
               }
 
-              <button class="btn btn-green btn-lg" style="width:100%;justify-content:center" (click)="doReset()" [disabled]="loading()">
+              <button class="btn btn-green btn-lg btn-block" (click)="doReset()" [disabled]="loading()">
                 @if (loading()) { Réinitialisation… } @else { Réinitialiser le mot de passe }
               </button>
-              <button type="button" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" (click)="gotoLogin()">Retour à la connexion</button>
+              <button type="button" class="btn btn-ghost btn-sm btn-block pf-loginlink" (click)="gotoLogin()">Retour à la connexion</button>
             }
           </div>
         </div>

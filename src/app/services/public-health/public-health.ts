@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiOverview, ApiTension, ApiZone } from '../../interfaces/api';
+import { ApiOverview, ApiReport, ApiTension, ApiZone } from '../../interfaces/api';
 import { Tension, ZoneInfo } from '../../interfaces/models';
 import { toZoneInfo } from '../distributor/distributor';
 
@@ -39,17 +39,17 @@ export class PublicHealthService {
   }
 
   /** GET /public-health/reports — liste des rapports générés. */
-  reports(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/public-health/reports`).pipe(
+  reports(): Observable<ApiReport[]> {
+    return this.http.get<{ data: ApiReport[] }>(`${this.base}/public-health/reports`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
   }
 
   /** POST /public-health/reports/generate — générer un nouveau rapport. */
-  generateReport(period: string, type: string): Observable<any> {
-    return this.http.post<{ data: any }>(`${this.base}/public-health/reports/generate`, { period, type }).pipe(
-      map(r => r.data ?? {}),
+  generateReport(period: string, type: string): Observable<ApiReport | null> {
+    return this.http.post<{ data: ApiReport | null }>(`${this.base}/public-health/reports/generate`, { period, type }).pipe(
+      map(r => r.data ?? null),
       catchError(() => of(null)),
     );
   }
@@ -62,32 +62,32 @@ export class PublicHealthService {
   }
 
   /** GET /public-health/dashboard — indicateurs du tableau de bord. */
-  dashboard(): Observable<any> {
-    return this.http.get<{ data: any }>(`${this.base}/public-health/dashboard`).pipe(
+  dashboard(): Observable<Record<string, unknown>> {
+    return this.http.get<{ data: Record<string, unknown> }>(`${this.base}/public-health/dashboard`).pipe(
       map(r => r.data ?? {}),
       catchError(() => of({})),
     );
   }
 
   /** GET /public-health/alerts — alertes nationales. */
-  alerts(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/public-health/alerts`).pipe(
+  alerts(): Observable<Record<string, unknown>[]> {
+    return this.http.get<{ data: Record<string, unknown>[] }>(`${this.base}/public-health/alerts`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
   }
 
   /** GET /public-health/trends — tendances. */
-  trends(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/public-health/trends`).pipe(
+  trends(): Observable<Record<string, unknown>[]> {
+    return this.http.get<{ data: Record<string, unknown>[] }>(`${this.base}/public-health/trends`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );
   }
 
   /** GET /public-health/top-zones — top zones en tension. */
-  topZones(): Observable<any[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/public-health/top-zones`).pipe(
+  topZones(): Observable<Record<string, unknown>[]> {
+    return this.http.get<{ data: Record<string, unknown>[] }>(`${this.base}/public-health/top-zones`).pipe(
       map(r => r.data ?? []),
       catchError(() => of([])),
     );

@@ -285,3 +285,189 @@ export interface ApiTension {
   shortage: number;
   total: number;
 }
+
+/* ---- Pharmacie : ordonnances, mouvements, alertes groupées ---- */
+
+/** GET /pharmacy/prescriptions — ordonnance numérique reçue (commande `prescription`). */
+export interface ApiPrescription {
+  id: number;
+  patient: string | null;
+  phone: string | null;
+  notes: string | null;
+  status: string;
+  submitted_at: string | null;
+  download_url?: string;
+}
+
+/** GET /pharmacy/stock/{stock}/movements — ligne de traçabilité. */
+export interface ApiStockMovement {
+  id: number;
+  type: string;
+  type_label?: string;
+  quantity: number;
+  old_quantity: number;
+  new_quantity: number;
+  direction: 'entrée' | 'sortie' | string;
+  user: string | null;
+  reason: string | null;
+  created_at: string | null;
+  /** Renseigné par le service à partir de l'en-tête de la réponse. */
+  medicine?: string | null;
+}
+
+/** GET /pharmacy/grouped-alerts — recherche groupée en attente de réponse. */
+export interface ApiGroupedAlert {
+  response_id: number;
+  search_id: number;
+  medicine_id: number;
+  medicine: string;
+  dosage: string | null;
+  form: string | null;
+  created_at: string | null;
+}
+
+/* ---- Patient : recherche groupée ---- */
+
+/** POST /grouped-search — accusé de lancement. */
+export interface ApiGroupedSearch {
+  search_id: number;
+  medicine: string;
+  target_count: number;
+  check_url?: string;
+}
+export interface ApiGroupedSearchPharmacy {
+  structure_id: number;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  quantity?: number | null;
+}
+export interface ApiGroupedSearchEquivalent {
+  id: number;
+  name: string | null;
+  dosage: string | null;
+  form: string | null;
+}
+/** GET /grouped-search/{id}/status */
+export interface ApiGroupedSearchStatus {
+  search_id: number;
+  medicine_id: number;
+  status: string;
+  target_count: number;
+  response_count: number;
+  pending_count: number;
+  available: ApiGroupedSearchPharmacy[];
+  equivalents?: ApiGroupedSearchEquivalent[];
+  preventive_alert?: string | null;
+}
+
+/* ---- Hôpital : partenaires & tableau de bord ---- */
+
+/** GET /hospital/partners — partenariat (sortant ou entrant). */
+export interface ApiPartner {
+  id: number;
+  partner_id: number | null;
+  partner: string | null;
+  type: string | null;
+  city: string | null;
+  phone: string | null;
+  status: 'pending' | 'active' | 'rejected' | string;
+  incoming: boolean;
+  can_respond: boolean;
+  connected_at: string | null;
+}
+export interface ApiPartnerCandidate { id: number; name: string; type: string; city?: string | null; }
+export interface ApiHospitalDashboard { [key: string]: number | string | null | undefined; }
+
+/* ---- Distributeur / PNA ---- */
+
+/**
+ * GET /distributor/previsions — prévision de rupture à 14 jours par médicament,
+ * calculée sur les stocks, seuils, sorties (30 j) et livraisons réelles.
+ */
+export interface ApiForecast {
+  medicine_id: number;
+  medicine: string;
+  form: string | null;
+  dosage: string | null;
+  is_controlled: boolean;
+  /** Part (%) des structures référençant le médicament qui sont ou seront sous seuil d'ici 14 j. */
+  probability: number;
+  risk_level: string;
+  /** Structures livrables qui référencent le médicament. */
+  tracked_count: number;
+  /** Structures à risque (rupture + sous seuil + projetées sous seuil). */
+  affected_count: number;
+  out_of_stock: number;
+  low_stock: number;
+  /** Au-dessus du seuil aujourd'hui mais passeront dessous d'ici 14 j (selon les sorties). */
+  projected_shortages: number;
+  /** Sorties cumulées (u./jour) sur les 30 derniers jours. */
+  daily_demand: number;
+  /** Couverture moyenne (jours) des structures ayant des sorties ; null sans consommation. */
+  avg_days_of_cover: number | null;
+  /** Unités à livrer pour maintenir toutes les structures au-dessus du seuil pendant 14 j. */
+  estimated_need: number;
+  /** Délai moyen création → livraison des plans livrés ; null sans historique. */
+  avg_delay_days: number | null;
+  delay_sample: number;
+}
+
+/** GET /pna/dashboard */
+export interface ApiPnaDashboard {
+  total_pra?: number;
+  total_hospitals?: number;
+  pending_orders?: number;
+  critical_orders?: number;
+  deliveries_in_transit?: number;
+  deliveries_planned?: number;
+  pra_requests_pending?: number;
+  pra_load?: { pra: string; pending: number }[];
+}
+
+/** GET /distributor/deliveries — livraison brute. */
+export interface ApiDelivery {
+  id: number | string;
+  structure?: string | null;
+  destination?: string | null;
+  zone?: string | null;
+  city?: string | null;
+  medicine?: string | null;
+  quantity?: number;
+  delivery_date?: string | null;
+  status: string;
+}
+
+/* ---- Santé publique : rapports & administration ---- */
+
+/** GET /public-health/reports */
+export interface ApiReport {
+  id: number;
+  type: string;
+  period: string;
+  status: 'completed' | 'generating' | 'failed' | string;
+  file_path: string | null;
+  generated_at: string | null;
+}
+
+/** GET /admin/users */
+export interface ApiAdminUser {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: BackendRole | string;
+  structure_id: number | null;
+  structure?: { id: number; name: string; type: string } | null;
+}
+
+/** GET /notifications — notification persistée. */
+export interface ApiNotification {
+  id: number;
+  read: boolean;
+  payload?: { icon?: string; tone?: string; title?: string; desc?: string; target?: string } | null;
+  created_at?: string | null;
+}
+
+/** Réponse d'erreur Laravel (validation / métier). */
+export interface ApiErrorBody { message?: string; errors?: Record<string, string[]>; }

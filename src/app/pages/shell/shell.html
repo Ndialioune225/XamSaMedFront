@@ -1,21 +1,21 @@
     @if (current(); as r) {
-      <div class="pf-app" [class.col]="collapsed()">
+      <div class="pf-app" [class.col]="compact()">
         <pf-toast-host/>
 
         <!-- Sidebar -->
         <aside class="pf-side">
           <div class="pf-sidetop">
-            <nv-logo [light]="true" (clicked)="exit()"/>
+            <nv-logo [light]="true" [compact]="compact()" (clicked)="exit()"/>
           </div>
           <div class="pf-rolepill">
             <span class="pf-rolepillic"><nv-icon [name]="r.icon" [size]="18"/></span>
-            <span class="pf-rolepilltxt pf-collapsible" [class.is-hidden]="collapsed()"><span>Espace</span><strong>{{ shortLabel(r.label) }}</strong></span>
+            <span class="pf-rolepilltxt pf-collapsible" [class.is-hidden]="compact()"><span>Espace</span><strong>{{ shortLabel(r.label) }}</strong></span>
           </div>
           <nav class="pf-nav">
             @for (n of nav(); track n.id) {
               <button class="pf-navitem" [class.on]="sec() === n.id" (click)="select(n.id)" [title]="n.label">
                 <span class="pf-navic"><nv-icon [name]="n.icon" [size]="20"/></span>
-                <span class="pf-collapsible" [class.is-hidden]="collapsed()">{{ n.label }}</span>
+                <span class="pf-collapsible" [class.is-hidden]="compact()">{{ n.label }}</span>
                 @if (n.badge && n.badge > 0) { <span class="pf-navbadge">{{ n.badge }}</span> }
               </button>
             }
@@ -23,11 +23,11 @@
           <div class="pf-sidefoot">
             <button class="pf-navitem" (click)="toggleCollapse()" title="Réduire">
               <span class="pf-navic"><nv-icon name="chevron" [size]="20" [rotate]="collapsed() ? 0 : 180"/></span>
-              <span class="pf-collapsible" [class.is-hidden]="collapsed()">Réduire</span>
+              <span class="pf-collapsible" [class.is-hidden]="compact()">Réduire</span>
             </button>
             <button class="pf-navitem" (click)="exit()" title="Quitter">
               <span class="pf-navic"><nv-icon name="logout" [size]="20"/></span>
-              <span class="pf-collapsible" [class.is-hidden]="collapsed()">Quitter la plateforme</span>
+              <span class="pf-collapsible" [class.is-hidden]="compact()">Quitter la plateforme</span>
             </button>
           </div>
         </aside>
@@ -36,7 +36,7 @@
         <div class="pf-main">
           <header class="pf-top">
             <div class="pf-topsearch">
-              <nv-icon name="search" [size]="18" color="var(--gray-text)"/>
+              <nv-icon name="search" [size]="18" color="var(--color-gray-text)"/>
               <input placeholder="Rechercher un médicament, une officine…" [value]="globalQuery()" (focus)="focusGlobalSearch()" (input)="searchGlobal($event)" (blur)="closeGlobalSearch()"/>
               @if (searchFocused() && (searchLoading() || globalResults().length > 0 || globalQuery().trim().length >= 2)) {
                 <div class="pf-global-results" (mousedown)="$event.preventDefault()">
@@ -66,7 +66,7 @@
                         <div><strong>{{ n.t }}</strong><span>{{ n.d }}</span></div>
                       </button>
                     }
-                    @if (notifs().length === 0) { <p class="muted" style="padding:14px;font-size:13px">Aucune notification.</p> }
+                    @if (notifs().length === 0) { <p class="muted pf-notifempty">Aucune notification.</p> }
                   </div>
                 }
               </div>
@@ -94,23 +94,23 @@
             @switch (r.id) {
               @case ('patient') {
                 @defer (on immediate) { <app-patient-dash [(section)]="sec"/> }
-                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+                @placeholder { <div class="pf-defer-placeholder">Chargement de l'espace…</div> }
               }
               @case ('pharma') {
                 @defer (on immediate) { <app-pharma-dash [(section)]="sec"/> }
-                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+                @placeholder { <div class="pf-defer-placeholder">Chargement de l'espace…</div> }
               }
               @case ('distrib') {
                 @defer (on immediate) { <app-distrib-dash [(section)]="sec"/> }
-                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+                @placeholder { <div class="pf-defer-placeholder">Chargement de l'espace…</div> }
               }
               @case ('hopital') {
-                @defer (on immediate) { <app-hopital-dash [section]="sec()"/> }
-                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+                @defer (on immediate) { <app-hopital-dash [(section)]="sec"/> }
+                @placeholder { <div class="pf-defer-placeholder">Chargement de l'espace…</div> }
               }
               @case ('sante') {
                 @defer (on immediate) { <app-sante-dash [(section)]="sec"/> }
-                @placeholder { <div class="muted" style="padding:48px;text-align:center">Chargement de l'espace…</div> }
+                @placeholder { <div class="pf-defer-placeholder">Chargement de l'espace…</div> }
               }
             }
           </main>

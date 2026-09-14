@@ -4,6 +4,7 @@ import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { RoleId, Notif, NotifKind } from '../../interfaces/models';
+import { ApiNotification } from '../../interfaces/api';
 import { OrderService } from '../orders/orders';
 import { PharmacyService } from '../pharmacy/pharmacy';
 import { DistributorService } from '../distributor/distributor';
@@ -27,7 +28,7 @@ export class NotificationService {
 
   /** Notifications persistées non lues (table notifications). */
   persisted(): Observable<Notif[]> {
-    return this.http.get<{ data: any[] }>(`${this.base}/notifications`).pipe(
+    return this.http.get<{ data: ApiNotification[] }>(`${this.base}/notifications`).pipe(
       map(r => (r.data ?? [])
         .filter(n => !n.read)
         .map(n => ({
@@ -38,7 +39,7 @@ export class NotificationService {
           t: n.payload?.title ?? 'Notification',
           d: n.payload?.desc ?? '',
           target: n.payload?.target,
-        } as Notif))),
+        }))),
       catchError(() => of([])),
     );
   }

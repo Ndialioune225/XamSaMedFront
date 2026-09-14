@@ -1,1 +1,28 @@
-/* patient — styles spécifiques au composant. La charte globale vit dans src/styles.css. */
+@reference "../../../../styles.css";
+/* ===================== PATIENT — recherche & réservations ===================== */
+:host { @apply contents; }
+.pf-searchbar { @apply flex gap-2.5 mb-[22px]; }
+.pf-sbinput { @apply flex-1 flex items-center gap-3 bg-white border-[1.5px] border-gray-line rounded-md px-[18px] py-3.5; }
+.pf-sbinput:focus-within { @apply border-green shadow-focus; }
+.pf-sbinput nv-icon { @apply flex-none; }
+.pf-sbinput input { @apply border-0 outline-none font-body text-[15.5px] w-full text-black; }
+.pf-sbclear { @apply text-gray-text grid place-items-center; }
+.pf-suggest { @apply flex gap-2 flex-wrap mb-6; }
+.pf-suggest-label { @apply text-[13px] self-center mr-1 text-gray-text; }
+.pf-suggchip { @apply font-title font-semibold text-[13px] text-blue bg-white border border-gray-line rounded-full px-3.5 py-2 transition duration-150; }
+.pf-suggchip:hover { @apply border-green text-green; }
+.pf-searching { @apply px-1 py-[18px] text-gray-text; }
+
+.pf-result { @apply flex items-center gap-4 w-full text-left cursor-pointer p-4 border border-gray-line rounded-md mb-3 bg-white transition duration-150; }
+.pf-result:hover { @apply shadow-md; }
+.pf-result-body { @apply flex-1; }
+
+/* réservations : une carte par ligne */
+.pf-resalist { @apply mb-[22px]; }              /* l'espacement vient de .pf-li + .pf-li */
+.pf-resa { @apply px-[22px] py-[18px]; }
+.pf-resa-side { @apply text-right; }
+.pf-resa-when { @apply mt-1.5; }
+.pf-resa-cancel { @apply mt-2; }
+
+/* recherche groupée */
+.pf-warn { @apply text-[12.5px] mt-2; }

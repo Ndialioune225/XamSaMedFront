@@ -15,7 +15,7 @@ export interface Dispo { p: string; q: string; s: DispoState; }
 export interface StockItem { id: string; q: number; seuil: number; s: StockState; }
 export interface Demande { id: string; med: string; de: string; type: string; qte: string; urgence: string; quand: string; statut: string; }
 export interface DemandePharmacy { id: number; nom: string; adresse: string; tel: string; available: number; status: string; }
-export interface DemandeReg { id: string; zone: string; medId: number; med: string; vol: string; need: number; tension: ZoneLevel; officines: number; pharmacies: DemandePharmacy[]; }
+export interface DemandeReg { id: string; zone: string; medId: number; med: string; need: number; tension: ZoneLevel; officines: number; pharmacies: DemandePharmacy[]; }
 export interface ZoneInfo { nom: string; x: number; y: number; niveau: ZoneLevel; ruptures: number; }
 export interface Tension { nom: string; pct: number; delai: string; }
 export interface AlerteHop { id: string; medId?: number | null; med: string; service: string; niveau: ZoneLevel; reste: string; quand: string; requestedTo?: number[]; }
